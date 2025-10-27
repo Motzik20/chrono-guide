@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: chrono-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-chrono}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chrono}
+      POSTGRES_DB: ${POSTGRES_DB:-chrono}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    working_dir: /app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - DATABASE_URL=postgresql://chrono:chrono@db:5432/chrono
+    volumes:
+      - ./app:/app/app
+      - ./alembic.ini:/app/alembic.ini
+      - ./app/alembic:/app/app/alembic
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+
+
