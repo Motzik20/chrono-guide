@@ -1,14 +1,15 @@
 import datetime as dt
+from typing import Any
 
 from pydantic import model_validator
 from sqlalchemy import UniqueConstraint, func
-from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, String, Time
+from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, Time
 
 from app.core.timezone import convert_model_datetimes_to_utc, now_utc
 
 
 class WeeklyAvailability(SQLModel, table=True):
-    __tablename__ = "weekly_availability"
+    __tablename__ = "weekly_availability" # type: ignore[assignment]
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(default=None, foreign_key="users.id", unique=True)
@@ -22,22 +23,20 @@ class WeeklyAvailability(SQLModel, table=True):
     )
 
     # Relationship to DailyWindow
-    windows: list["DailyWindow"] = Relationship(
+    windows: list["DailyWindowModel"] = Relationship(
         back_populates="weekly_availability",
         sa_relationship_kwargs={"lazy": "selectin"}
     )
 
     @model_validator(mode="before")
     @classmethod
-    def convert_datetimes_to_utc(cls, data):
+    def convert_datetimes_to_utc(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Convert all datetime fields to UTC before validation."""
-        if isinstance(data, dict):
-            return convert_model_datetimes_to_utc(data)
-        return data
+        return convert_model_datetimes_to_utc(data)
 
 
-class DailyWindow(SQLModel, table=True):
-    __tablename__ = "daily_windows"
+class DailyWindowModel(SQLModel, table=True):
+    __tablename__ = "daily_windows"  # type: ignore[assignment]
     __table_args__ = (
         UniqueConstraint(
             "weekly_availability_id",
@@ -61,8 +60,6 @@ class DailyWindow(SQLModel, table=True):
 
     @model_validator(mode="before")
     @classmethod
-    def convert_datetimes_to_utc(cls, data):
+    def convert_datetimes_to_utc(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Convert all datetime fields to UTC before validation."""
-        if isinstance(data, dict):
-            return convert_model_datetimes_to_utc(data)
-        return data
+        return convert_model_datetimes_to_utc(data)

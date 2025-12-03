@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_CONFIG = None
+_CONFIG: EnvConfig | None = None
 
 
 class EnvConfig(BaseSettings):
@@ -14,7 +16,8 @@ class EnvConfig(BaseSettings):
 def get_config() -> EnvConfig:
     global _CONFIG
     if not _CONFIG:
-        _CONFIG = EnvConfig()
+        _CONFIG = EnvConfig()  # type: ignore
+    assert _CONFIG is not None
     return _CONFIG
 
 
@@ -23,6 +26,6 @@ def is_local_env() -> bool:
     return config.IS_LOCAL
 
 
-def create_local_config():
+def create_local_config() -> None:
     global _CONFIG
-    _CONFIG = EnvConfig(IS_LOCAL=True)
+    _CONFIG = EnvConfig(IS_LOCAL=True)  # type: ignore

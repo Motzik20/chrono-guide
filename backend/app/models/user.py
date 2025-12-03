@@ -1,4 +1,5 @@
 import datetime as dt
+from typing import Any
 
 from pydantic import model_validator
 from sqlalchemy import func
@@ -8,7 +9,7 @@ from app.core.timezone import convert_model_datetimes_to_utc, now_utc
 
 
 class User(SQLModel, table=True):
-    __tablename__ = "users"
+    __tablename__ = "users" # type: ignore[assignment]
 
     id: int | None = Field(default=None, primary_key=True)
     email: str = Field(unique=True)
@@ -24,8 +25,6 @@ class User(SQLModel, table=True):
 
     @model_validator(mode="before")
     @classmethod
-    def convert_datetimes_to_utc(cls, data):
+    def convert_datetimes_to_utc(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Convert all datetime fields to UTC before validation."""
-        if isinstance(data, dict):
-            return convert_model_datetimes_to_utc(data)
-        return data
+        return convert_model_datetimes_to_utc(data)
