@@ -7,23 +7,25 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from app.core.timezone import ensure_utc, get_next_weekday, now_utc
+from app.models.availability import WeeklyAvailability
 from app.models.schedule_item import ScheduleItem
 from app.models.task import Task
 from app.schemas.availability import DailyWindow as DailyWindowSchema
 from app.schemas.availability import DayOfWeek
-from app.services.scheduling_service import (
+from app.services.scheduling_service import (  # noqa: PLC2701
     AvailableSlots,
     BusyInterval,
     SchedulableTask,
+    ScheduleBlock,
     SchedulerAvailability,
     SchedulingConfig,
     SchedulingRequest,
     SchedulingResponse,
     TimeSlot,
-    _create_schedule_block,
-    _fill_single_slot,
-    _find_best_fitting_task,
-    _remove_task_from_deque,
+    _create_schedule_block,  # type: ignore[attr-defined]
+    _fill_single_slot,  # type: ignore[attr-defined]
+    _find_best_fitting_task,  # type: ignore[attr-defined]
+    _remove_task_from_deque,  # type: ignore[attr-defined]
     get_available_time_slots,
     place_tasks_in_slots,
     rank_tasks,
@@ -43,7 +45,7 @@ from tests.conftest import (
 
 
 def get_remaining_free_slots(
-    original_slots: AvailableSlots, schedule_blocks: list
+    original_slots: AvailableSlots, schedule_blocks: list[ScheduleBlock]
 ) -> AvailableSlots:
     """
     Test utility: Calculate which parts of the original available slots are still free
@@ -57,7 +59,7 @@ def get_remaining_free_slots(
 
     sorted_blocks = sorted(schedule_blocks, key=lambda sb: sb.start_time)
 
-    remaining_slots = []
+    remaining_slots: list[TimeSlot] = []
 
     for original_slot in original_slots.slots:
         overlapping_blocks = [
@@ -88,19 +90,19 @@ def get_remaining_free_slots(
 
 
 class TestSchedulingConversions:
-    def test_task_conversion(self, task):
+    def test_task_conversion(self, task: Task) -> None:
         schedulable: SchedulableTask = task_to_schedulable(task)
         assert schedulable.title is not None
-        assert schedulable.id == task.id
+        assert schedulable.id == task.id  # type: ignore[attr-defined]
         assert schedulable.title == task.title
 
-    def test_tasks_conversion(self, task_list):
+    def test_tasks_conversion(self, task_list: list[Task]) -> None:
         schedulables: list[SchedulableTask] = tasks_to_schedulables(task_list)
         for index, schedulable in enumerate(schedulables):
-            task: Task = task_list[index]  # Fixed: was using schedulables[index]
+            task: Task = task_list[index]
             manual_schedulable: SchedulableTask = task_to_schedulable(task)
             assert schedulable == manual_schedulable
-            assert schedulable.id == task.id
+            assert schedulable.id == task.id  # type: ignore[attr-defined]
             assert schedulable.title == task.title
             assert schedulable.deadline == ensure_utc(task.deadline)
 
@@ -108,14 +110,14 @@ class TestSchedulingConversions:
 class TestSchedulingRanking:
     def test_rank_tasks(
         self,
-        task_list,
-        task,
-        urgent_task,
-        longer_task,
-        deadline_task,
-        later_deadline_task,
-        urgent_later_deadline_task,
-    ):
+        task_list: list[Task],
+        task: Task,
+        urgent_task: Task,
+        longer_task: Task,
+        deadline_task: Task,
+        later_deadline_task: Task,
+        urgent_later_deadline_task: Task,
+    ) -> None:
         now: dt.datetime = now_utc()
         schedulables: list[SchedulableTask] = tasks_to_schedulables(task_list)
         ranked_schedulables: list[SchedulableTask] = rank_tasks(schedulables, now)
@@ -136,8 +138,7 @@ class TestSchedulingRanking:
 
     @settings(max_examples=1000)
     @given(st.lists(schedulable_task_strategy(), min_size=1, max_size=1000))
-    def test_rank_tasks_stratgey(self, task_list):
-        # Ensure unique task IDs to avoid test failures
+    def test_rank_tasks_stratgey(self, task_list: list[SchedulableTask]) -> None:
         unique_tasks = {task.id: task for task in task_list}
         task_list = list(unique_tasks.values())
 
@@ -165,8 +166,7 @@ class TestSchedulingRanking:
                             >= next_schedulable.expected_duration_minutes
                         )
 
-    def test_rank_tasks_same_deadline_different_priority(self):
-        """Test ranking when tasks have the same deadline but different priorities."""
+    def test_rank_tasks_same_deadline_different_priority(self) -> None:
         now = dt.datetime(2024, 1, 1, 12, 0, tzinfo=dt.timezone.utc)
         same_deadline = now + dt.timedelta(hours=4)
 
@@ -193,8 +193,7 @@ class TestSchedulingRanking:
         assert ranked[0].id == 2
         assert ranked[1].id == 1
 
-    def test_rank_tasks_same_priority_different_duration(self):
-        """Test ranking when tasks have same priority but different durations."""
+    def test_rank_tasks_same_priority_different_duration(self) -> None:
         now = dt.datetime(2024, 1, 1, 12, 0, tzinfo=dt.timezone.utc)
 
         tasks = [
@@ -212,8 +211,7 @@ class TestSchedulingRanking:
         assert ranked[0].id == 2
         assert ranked[1].id == 1
 
-    def test_rank_tasks_deadline_priority(self):
-        """Test task ranking with deadlines and priorities."""
+    def test_rank_tasks_deadline_priority(self) -> None:
         now = dt.datetime(2024, 1, 1, 12, 0, tzinfo=dt.timezone.utc)
 
         tasks = [
@@ -256,8 +254,8 @@ class TestSchedulingRanking:
 
 class TestSubtractingBusyFromWindow:
     def test_simple_subtract_busy_from_window(
-        self, daily_window_start, daily_window_end, busy_interval
-    ):
+        self, daily_window_start: dt.datetime, daily_window_end: dt.datetime, busy_interval: BusyInterval
+    ) -> None:
         end_first_window: dt.datetime = daily_window_start + dt.timedelta(hours=2)
         start_second_window: dt.datetime = daily_window_start + dt.timedelta(hours=4)
         free_slots: list[TimeSlot] = subtract_busy_from_window(
@@ -271,8 +269,8 @@ class TestSubtractingBusyFromWindow:
         assert free_slots[1].end == second_slot.end
 
     def test_complex_subtract_busy_from_window(
-        self, daily_window_start, daily_window_end, busy_interval
-    ):
+        self, daily_window_start: dt.datetime, daily_window_end: dt.datetime, busy_interval: BusyInterval
+    ) -> None:
         nested_busy_interval: BusyInterval = copy.deepcopy(busy_interval)
         nested_busy_interval.start_time = busy_interval.start_time + dt.timedelta(
             minutes=30
@@ -293,8 +291,8 @@ class TestSubtractingBusyFromWindow:
         assert free_slots
 
     def test_empty_subtract_busy_from_window(
-        self, daily_window_start, daily_window_end
-    ):
+        self, daily_window_start: dt.datetime, daily_window_end: dt.datetime
+    ) -> None:
         free_slots = subtract_busy_from_window(daily_window_start, daily_window_end, [])
         assert free_slots[0].start == daily_window_start
         assert free_slots[0].end == daily_window_end
@@ -327,7 +325,7 @@ class TestSubtractingBusyFromWindow:
             hour=end_hour, minute=0, second=0, microsecond=0, tzinfo=dt.timezone.utc
         )
 
-        busy_intervals = []
+        busy_intervals: list[BusyInterval] = []
         for busy_start_hour, busy_end_hour in busy_hours:
             if busy_end_hour <= busy_start_hour:
                 continue
@@ -408,16 +406,14 @@ class TestSubtractingBusyFromWindow:
         )
 
         sorted_busy = sorted(busy_intervals, key=lambda bi: bi.start_time)
-        merged_intervals = []
+        merged_intervals: list[tuple[dt.datetime, dt.datetime]] = []
         current_start = sorted_busy[0].start_time
         current_end = sorted_busy[0].end_time
 
         for busy in sorted_busy[1:]:
-            # If this interval overlaps with current, extend the current interval
             if busy.start_time <= current_end:
                 current_end = max(current_end, busy.end_time)
             else:
-                # No overlap, save the (extended) interval as an actual unique busy interval
                 merged_intervals.append((current_start, current_end))
                 current_start = busy.start_time
                 current_end = busy.end_time
@@ -565,15 +561,16 @@ class TestAvailableTimeSlots:
         busy_intervals_strategy(min_date=get_next_weekday(now_utc())),
     )
     def test_available_time_slots(
-        self, st_weekly_availability: SchedulerAvailability, busy_intervals
+        self, st_weekly_availability: SchedulerAvailability, busy_intervals: list[BusyInterval]
     ):
         next_monday = get_next_weekday(now_utc())
         available_slots: AvailableSlots = get_available_time_slots(
             busy_intervals, st_weekly_availability, next_monday
         )
+        assert st_weekly_availability.windows is not None
         if not busy_intervals:
             index: int = 0
-            daily_windows_duration: int = 0
+            daily_windows_duration: float = 0.0
             for daily_windows in st_weekly_availability.windows.values():
                 for daily_window in daily_windows:
                     assert (
@@ -637,13 +634,11 @@ class TestAvailableTimeSlots:
 
         available_slots = get_available_time_slots([], availability, week_start)
 
-        # Should have no available slots since the window ends before week_start
         assert len(available_slots.slots) == 0
         assert available_slots.total_duration_minutes == 0
 
     def test_get_available_time_slots_week_start_inside_window(self):
         """Test that when week_start is inside a window, the window start is adjusted."""
-        # Create availability with a window that starts before week_start
         availability = SchedulerAvailability(
             windows={
                 DayOfWeek.MON: [
@@ -755,12 +750,12 @@ class TestPlaceTasksInSlots:
     @given(
         tasks=st.lists(schedulable_task_strategy(), min_size=5, max_size=100),
     )
-    def test_remove_task_from_deque(self, tasks):
+    def test_remove_task_from_deque(self, tasks: list[SchedulableTask]) -> None:
         unique_tasks = {task.id: task for task in tasks}
-        tasks = list(unique_tasks.values())
+        tasks = list[SchedulableTask](unique_tasks.values())
         task_index = random.randint(0, len(tasks) - 1)
         task = tasks[task_index]
-        tasks_deque = deque(tasks)
+        tasks_deque = deque[SchedulableTask](tasks)
         _remove_task_from_deque(tasks_deque, task)
         assert len(tasks_deque) == len(tasks) - 1
         tasks.remove(task)
@@ -899,7 +894,7 @@ class TestPlaceTasksInSlots:
 
     def test_place_tasks_empty_task_list(self):
         """Test placing tasks when there are no tasks to schedule."""
-        empty_tasks = []
+        empty_tasks: list[SchedulableTask] = []
         slots = AvailableSlots(
             slots=[
                 TimeSlot(
@@ -1273,7 +1268,7 @@ class TestPlaceTasksInSlots:
             start=dt.datetime(2024, 1, 1, 9, 0, tzinfo=dt.timezone.utc),
             end=dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.timezone.utc),
         )
-        tasks = deque()
+        tasks: deque[SchedulableTask] = deque()
 
         blocks = _fill_single_slot(slot, tasks, split_tasks=False)
 
@@ -1342,7 +1337,7 @@ class TestPlaceTasksInSlots:
 
     def test_find_best_fitting_task_empty_deque(self):
         """Test _find_best_fitting_task with empty deque."""
-        tasks = deque()
+        tasks: deque[SchedulableTask] = deque[SchedulableTask]()
 
         fitting_task = _find_best_fitting_task(tasks, 60)
         assert fitting_task is None
@@ -1362,7 +1357,7 @@ class TestPlaceTasksInSlots:
         assert len(tasks) == 0
 
         # Test removing from empty deque
-        tasks = deque()
+        tasks: deque[SchedulableTask] = deque[SchedulableTask]()
         task_to_remove = SchedulableTask(
             id=1, title="Task 1", expected_duration_minutes=60, priority=1
         )
@@ -1390,7 +1385,7 @@ class TestPlaceTasksInSlots:
 
 class TestSchedulingCore:
     def test_schedule_tasks_main_function(
-        self, task_list, schedule_item_list, weekly_availability, daily_windows
+        self, task_list: list[Task], schedule_item_list: list[ScheduleItem], weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
     ):
         """Test the main schedule_tasks function that serves as the API entry point."""
         response = schedule_tasks(task_list, schedule_item_list, weekly_availability)
@@ -1407,7 +1402,7 @@ class TestSchedulingCore:
             assert block.source == "scheduler"
 
     def test_schedule_core_algorithm(
-        self, task_list, schedule_item_list, weekly_availability, daily_windows
+        self, task_list: list[Task], schedule_item_list: list[ScheduleItem], weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
     ):
         """Test the core schedule function with a SchedulingRequest."""
         schedulable_tasks = tasks_to_schedulables(task_list)
@@ -1432,11 +1427,11 @@ class TestSchedulingCore:
         assert isinstance(response.warnings, list)
 
     def test_schedule_empty_tasks_with_daily_windows(
-        self, weekly_availability, daily_windows
+        self, weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
     ):
         """Test scheduling with no tasks."""
-        empty_tasks = []
-        empty_schedule_items = []
+        empty_tasks: list[Task] = []
+        empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
             empty_tasks, empty_schedule_items, weekly_availability
@@ -1446,11 +1441,11 @@ class TestSchedulingCore:
         assert len(response.warnings) == 0
 
     def test_schedule_empty_tasks_without_daily_windows(
-        self, weekly_availability, daily_windows
+        self, weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
     ):
         """Test scheduling with no tasks."""
-        empty_tasks = []
-        empty_schedule_items = []
+        empty_tasks: list[Task] = []
+        empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
             empty_tasks, empty_schedule_items, weekly_availability
@@ -1459,9 +1454,9 @@ class TestSchedulingCore:
         assert len(response.schedule_blocks) == 0
         assert len(response.warnings) == 0
 
-    def test_schedule_no_availability(self, task_list, schedule_item_list):
+    def test_schedule_no_availability(self, task_list: list[Task], schedule_item_list: list[ScheduleItem]):
         """Test scheduling with no availability windows."""
-        empty_availability = SchedulerAvailability(windows={})
+        empty_availability: WeeklyAvailability = WeeklyAvailability(windows=[])
 
         response = schedule_tasks(task_list, schedule_item_list, empty_availability)
 
@@ -1470,7 +1465,7 @@ class TestSchedulingCore:
         assert len(response.warnings) == len(task_list)
 
     def test_schedule_with_custom_config(
-        self, task_list, schedule_item_list, weekly_availability, daily_windows
+        self, task_list: list[Task], schedule_item_list: list[ScheduleItem], weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
     ):
         """Test schedule function with custom configuration."""
         schedulable_tasks = tasks_to_schedulables(task_list)
@@ -1495,12 +1490,13 @@ class TestSchedulingCore:
         assert hasattr(response, "schedule_blocks")
         assert hasattr(response, "warnings")
 
-    def test_schedule_tasks_with_deadlines(self, weekly_availability, daily_windows):
+    def test_schedule_tasks_with_deadlines(self, weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]):
         """Test schedule_tasks with tasks that have deadlines."""
         tasks_with_deadlines = [
             Task(
                 id=1,
                 title="Urgent Task",
+                description="Urgent Task",
                 expected_duration_minutes=60,
                 priority=1,
                 deadline=dt.datetime(2024, 1, 1, 12, 0, tzinfo=dt.timezone.utc),
@@ -1508,12 +1504,13 @@ class TestSchedulingCore:
             Task(
                 id=2,
                 title="Regular Task",
+                description="Regular Task",
                 expected_duration_minutes=90,
                 priority=2,
                 deadline=None,
             ),
         ]
-        empty_schedule_items = []
+        empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
             tasks_with_deadlines, empty_schedule_items, weekly_availability
@@ -1530,13 +1527,14 @@ class TestSchedulingCore:
                 assert urgent_index < regular_index
 
     def test_schedule_tasks_with_mixed_timezones(
-        self, weekly_availability, daily_windows
+        self, weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
     ):
         """Test schedule_tasks with tasks that have different timezone handling."""
         tasks_with_timezones = [
             Task(
                 id=1,
                 title="UTC Task",
+                description="UTC Task",
                 expected_duration_minutes=60,
                 priority=1,
                 deadline=dt.datetime(2024, 1, 1, 12, 0, tzinfo=dt.timezone.utc),
@@ -1544,12 +1542,13 @@ class TestSchedulingCore:
             Task(
                 id=2,
                 title="Naive Task",
+                description="Naive Task",
                 expected_duration_minutes=90,
                 priority=2,
                 deadline=dt.datetime(2024, 1, 1, 15, 0),  # No timezone
             ),
         ]
-        empty_schedule_items = []
+        empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
             tasks_with_timezones, empty_schedule_items, weekly_availability
@@ -1562,7 +1561,7 @@ class TestSchedulingCore:
             assert block.end_time.tzinfo is not None
 
     def test_schedule_with_overlapping_busy_intervals(
-        self, task_list, weekly_availability, daily_windows
+        self, task_list: list[Task], weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
     ):
         """Test scheduling with overlapping busy intervals."""
         overlapping_schedule_items = [
@@ -1572,6 +1571,7 @@ class TestSchedulingCore:
                 start_time=dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.timezone.utc),
                 end_time=dt.datetime(2024, 1, 1, 12, 0, tzinfo=dt.timezone.utc),
                 title="Meeting 1",
+                description="Meeting 1",
             ),
             ScheduleItem(
                 id=2,
@@ -1581,6 +1581,7 @@ class TestSchedulingCore:
                 ),  # Overlaps with Meeting 1
                 end_time=dt.datetime(2024, 1, 1, 13, 0, tzinfo=dt.timezone.utc),
                 title="Meeting 2",
+                description="Meeting 2",
             ),
         ]
 

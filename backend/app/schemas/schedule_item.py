@@ -4,21 +4,21 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 class ScheduleItemBase(BaseModel):
-    start_time: dt.datetime
-    end_time: dt.datetime
+    start_time: dt.datetime | None = None
+    end_time: dt.datetime | None = None
     title: str | None = None
     description: str | None = None
-    source: str = Field(default="task")
+    source: str | None = Field(default="task")
 
     @field_validator("start_time", "end_time")
     @classmethod
-    def times_must_be_future(cls, v):
+    def times_must_be_future(cls, v: dt.datetime) -> dt.datetime:
         if v <= dt.datetime.now(dt.timezone.utc):
             raise ValueError("Schedule times must be in the future")
         return v
 
     @model_validator(mode="after")
-    def end_after_start(self):
+    def end_after_start(self) -> "ScheduleItemBase":
         if self.start_time and self.end_time:
             if self.end_time <= self.start_time:
                 raise ValueError("End time must be after start time")

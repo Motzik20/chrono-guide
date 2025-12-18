@@ -60,6 +60,8 @@ select = [
     "C4",  # flake8-comprehensions
     "UP",  # pyupgrade
     "ARG001", # unused arguments in functions
+    "F401", # unused import
+    "F841", # undefined names
 ]
 
 ignore = [

@@ -1,14 +1,14 @@
 import datetime as dt
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class UserBase(BaseModel):
-    email: str = Field(min_length=1, max_length=255)
-
-    @field_validator("email")
+    @field_validator("email", check_fields=False)
     @classmethod
-    def validate_email(cls, v):
+    def validate_email(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
         if "@" not in v:
             raise ValueError("Email must contain @")
         return v.lower()

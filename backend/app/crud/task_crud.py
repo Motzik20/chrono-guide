@@ -5,19 +5,23 @@ from app.schemas.task import TaskCreate
 
 
 def get_user_tasks(user_id: int, session: Session) -> list[Task]:
-    return session.exec(select(Task).where(Task.user_id == user_id)).all()
+    return list(session.exec(select(Task).where(Task.user_id == user_id)).all())
 
 
 def create_task(task: TaskCreate, user_id: int, session: Session) -> Task:
-    task = Task.model_validate(task)
-    task.user_id = user_id
-    session.add(task)
+    task_model: Task = Task.model_validate(task)
+    task_model.user_id = user_id
+    session.add(task_model)
     session.commit()
-    session.refresh(task)
-    return task
+    session.refresh(task_model)
+    return task_model
 
 
 def get_tasks(task_ids: list[int], user_id: int, session: Session) -> list[Task]:
-    return session.exec(
-        select(Task).where(Task.id.in_(task_ids), Task.user_id == user_id)
-    ).all()
+    if not task_ids:
+        return []
+    return list(session.exec(
+        select(Task)
+        .where(Task.id.in_(task_ids))  # type: ignore[union-attr]
+        .where(Task.user_id == user_id)
+    ).all())

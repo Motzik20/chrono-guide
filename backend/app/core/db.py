@@ -1,22 +1,23 @@
 import os
+from collections.abc import Generator
+from typing import cast
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session, create_engine
 
-_DATABASE: Engine | None = None
-_SESSION_MAKER: sessionmaker | None = None
+_database: Engine | None = None
+_session_maker: sessionmaker[Session] | None = None
 
 
-def init_db(local: bool):
-    global _DATABASE
-    global _SESSION_MAKER
+def init_db(local: bool) -> None:
+    global _database
+    global _session_maker
     if local:
-        _DATABASE = create_local_db_engine()
-
+        _database = create_local_db_engine()
     else:
-        _DATABASE = create_db_engine()
-    _SESSION_MAKER = sessionmaker(autocommit=False, autoflush=False, bind=_DATABASE)
+        _database = create_db_engine()
+    _session_maker = cast(sessionmaker[Session], sessionmaker(autocommit=False, autoflush=False, bind=_database))
 
 
 def create_local_db_engine() -> Engine:
@@ -41,14 +42,14 @@ def create_db_engine() -> Engine:
 
 
 def get_session() -> Session:
-    if _SESSION_MAKER is None:
+    if _session_maker is None:
         raise ValueError("Database not initialized properly")
-    return _SESSION_MAKER()
+    return _session_maker()
 
 
-def _get_session():
-    assert _SESSION_MAKER
-    session = _SESSION_MAKER()
+def _get_session() -> Generator[Session, None, None]:
+    assert _session_maker
+    session: Session = _session_maker()
     try:
         yield session
         if session.in_transaction():
@@ -67,5 +68,5 @@ def _get_session():
             pass
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     yield from _get_session()

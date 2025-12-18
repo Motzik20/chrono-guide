@@ -1,5 +1,6 @@
 import datetime as dt
 from collections import deque
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -51,17 +52,17 @@ class TimeSlot(BaseModel):
 class AvailableSlots(BaseModel):
     """Collection of available time slots."""
 
-    slots: list[TimeSlot] = Field(default_factory=list)
+    slots: list[TimeSlot] = Field(default_factory=lambda: [])
     total_duration_minutes: int = Field(0)
 
-    def __init__(self, **data):
+    def __init__(self, **data: Any):
         super().__init__(**data)
-        self.total_duration_minutes = sum(slot.duration_minutes for slot in self.slots)
+        self.total_duration_minutes = int(sum(slot.duration_minutes for slot in self.slots))
 
-    def add_slots(self, slots: list[TimeSlot]):
+    def add_slots(self, slots: list[TimeSlot]) -> None:
         self.slots.extend(slots)
         for slot in slots:
-            self.total_duration_minutes += slot.duration_minutes
+            self.total_duration_minutes += int(slot.duration_minutes)
 
     def merge_slots(self, other: "AvailableSlots") -> None:
         self.slots.extend(other.slots)
@@ -89,14 +90,16 @@ class SchedulingRequest(BaseModel):
 class SchedulingResponse(BaseModel):
     schedule_blocks: list[ScheduleBlock]
     warnings: list[SchedulableTask] = Field(
-        default_factory=list
-    )  # instead of [] because [] would be on List object for all SchedulingResponses
+        default_factory=lambda: []
+    )
 
 
 def task_to_schedulable(task: Task) -> SchedulableTask:
     """
     Convert a Task model to a SchedulableTask for the scheduler.
     """
+    if task.id is None:
+        raise ValueError("Task must have an id to be schedulable")
     return SchedulableTask(
         id=task.id,
         title=task.title,
@@ -111,10 +114,14 @@ def tasks_to_schedulables(tasks: list[Task]) -> list[SchedulableTask]:
 
 
 def schedule_item_to_busy_interval(schedule_item: ScheduleItem) -> BusyInterval:
+    start_time = ensure_utc(schedule_item.start_time)
+    end_time = ensure_utc(schedule_item.end_time)
+    if start_time is None or end_time is None:
+        raise ValueError("Schedule item must have valid start_time and end_time")
     return BusyInterval(
         task_id=schedule_item.task_id,
-        start_time=ensure_utc(schedule_item.start_time),
-        end_time=ensure_utc(schedule_item.end_time),
+        start_time=start_time,
+        end_time=end_time,
         title=schedule_item.title,
     )
 
@@ -212,26 +219,31 @@ def get_available_time_slots(
     week_start: dt.datetime,
 ) -> AvailableSlots:
     available_slots: AvailableSlots = AvailableSlots()
-    start_weekday: DayOfWeek = week_start.date().weekday()
-    for day_offset in range(start_weekday, 7):
+    start_weekday_int: int = week_start.date().weekday()
+    start_weekday: DayOfWeek = DayOfWeek(start_weekday_int)
+    for day_offset in range(start_weekday_int, 7):
         current_date: dt.date = week_start.date() + dt.timedelta(
-            days=day_offset - start_weekday
+            days=day_offset - start_weekday_int
         )
-        day_of_week: DayOfWeek = current_date.weekday()
+        day_of_week_int: int = current_date.weekday()
+        day_of_week: DayOfWeek = DayOfWeek(day_of_week_int)
 
-        if day_of_week not in availability.windows.keys():
+        if availability.windows is None or day_of_week not in availability.windows.keys():
             continue
 
         day_windows = availability.windows[day_of_week]
 
         for window in day_windows:
-            window_start: dt.datetime = ensure_utc(
+            window_start_raw = ensure_utc(
                 dt.datetime.combine(current_date, window.start)
             )
-
-            window_end: dt.datetime = ensure_utc(
+            window_end_raw = ensure_utc(
                 dt.datetime.combine(current_date, window.end)
             )
+            if window_start_raw is None or window_end_raw is None:
+                continue
+            window_start: dt.datetime = window_start_raw
+            window_end: dt.datetime = window_end_raw
 
             if start_weekday == day_offset:
                 if window_end <= week_start:
@@ -295,7 +307,7 @@ def rank_tasks(tasks: list[SchedulableTask], now: dt.datetime) -> list[Schedulab
         if task.deadline:
             deadline_rank = int((task.deadline - now).total_seconds() / 60)
         else:
-            deadline_rank = float("inf")
+            deadline_rank = 999999999
 
         return (deadline_rank, task.priority, -task.expected_duration_minutes)
 
@@ -342,9 +354,9 @@ def _fill_single_slot(
     slot: TimeSlot,
     remaining_tasks: deque[SchedulableTask],
     split_tasks: bool,
-):
+) -> list[ScheduleBlock]:
     slot_position = slot.start
-    remaining_slot_duration = slot.duration_minutes
+    remaining_slot_duration = int(slot.duration_minutes)
     schedule_blocks: list[ScheduleBlock] = []
     while remaining_slot_duration > 0 and remaining_tasks:
         task = remaining_tasks.popleft()
@@ -394,7 +406,7 @@ def _remove_task_from_deque(
     tasks: deque[SchedulableTask],
     task: SchedulableTask,
 ) -> None:
-    temp_queue = deque()
+    temp_queue: deque[SchedulableTask] = deque()
     found = False
     while tasks and not found:
         candidate = tasks.popleft()

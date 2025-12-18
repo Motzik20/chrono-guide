@@ -8,17 +8,15 @@ class TaskBaseValidation(BaseModel):
 
     @field_validator("deadline")
     @classmethod
-    def validate_deadline(cls, v):
+    def validate_deadline(cls, v: dt.datetime | None) -> dt.datetime | None:
         if v is None:
             return v
 
         now = dt.datetime.now(dt.timezone.utc)
 
-        # Must be in future
         if v <= now:
             raise ValueError("Deadline must be in the future")
 
-        # Optional: reasonable limit (e.g., not more than 10 years)
         max_future = now + dt.timedelta(days=365 * 10)
         if v > max_future:
             raise ValueError("Deadline cannot be more than 10 years in the future")
@@ -31,7 +29,7 @@ class TaskCreate(TaskBaseValidation):
     description: str
     expected_duration_minutes: int = Field(gt=0)
     tips: list[str] = Field(default_factory=list)
-    priority: int = Field(default=2, ge=0, le=4)  # 0 is highest priority
+    priority: int = Field(default=2, ge=0, le=4)
 
 
 class TaskUpdate(TaskBaseValidation):
@@ -57,7 +55,7 @@ class TaskRead(BaseModel):
 
     @field_validator("tips", mode="before")
     @classmethod
-    def handle_none_tips(cls, v):
+    def handle_none_tips(cls, v: list[str] | None) -> list[str]:
         if v is None:
             return []
         return v
@@ -70,6 +68,19 @@ class TaskExtracted(BaseModel):
     expected_duration_minutes: int
     tips: list[str] = Field(default_factory=list)
 
+
+# Request schema for image analysis - expects base64 encoded image
+class TaskImageAnalysisRequest(BaseModel):
+    """Request schema for image analysis - expects base64 encoded image"""
+    image_description: str  # base64 encoded image data
+
+# Result from AI analysis of an image - extracted task information
+class TaskAnalysisResult(BaseModel):
+    """Result from AI analysis of an image - extracted task information"""
+    title: str
+    description: str
+    expected_duration_minutes: int
+    tips: list[str] = Field(default_factory=list)
 
 # Only if you ingest raw text via JSON; for images/PDFs, use FastAPI UploadFile
 class TaskExtractTextRequest(BaseModel):

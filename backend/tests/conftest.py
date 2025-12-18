@@ -1,14 +1,22 @@
 import datetime as dt
+from collections.abc import Generator
+from typing import TYPE_CHECKING
 
 import pytest
 from fastapi.testclient import TestClient
 from hypothesis import strategies as st
+
+if TYPE_CHECKING:
+    from hypothesis.strategies import DrawFn
+else:
+    DrawFn = object  # type: ignore[misc,assignment]
+from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
 from app.core.db import get_db
 from app.core.timezone import get_next_weekday, now_utc
-from app.models.availability import DailyWindow, WeeklyAvailability
+from app.models.availability import DailyWindowModel, WeeklyAvailability
 from app.models.schedule_item import ScheduleItem
 from app.models.task import Task
 from app.models.user import User
@@ -25,7 +33,7 @@ from app.services.scheduling_service import (
 
 
 @pytest.fixture
-def engine():
+def engine() -> Engine:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -35,14 +43,14 @@ def engine():
 
 
 @pytest.fixture
-def session(engine):
+def session(engine: Engine) -> Generator[Session, None, None]:
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
 
 
 @pytest.fixture
-def user(session):
+def user(session: Session) -> User:
     user = User(email="test-example@mail.com", password="example_hash_password")
     session.add(user)
     session.commit()
@@ -51,9 +59,9 @@ def user(session):
 
 
 @pytest.fixture
-def task(session, user):
+def task(session: Session, user: User) -> Task:
     task = Task(
-        user_id=user.id,
+        user_id=user.id, # type: ignore[attr-defined]
         title="Test Task",
         description="This is a task only for test purposes",
         expected_duration_minutes=60,
@@ -66,9 +74,9 @@ def task(session, user):
 
 
 @pytest.fixture
-def longer_task(session, user):
+def longer_task(session: Session, user: User) -> Task:
     task = Task(
-        user_id=user.id,
+        user_id=user.id, # type: ignore[attr-defined]
         title="Test Task with longer duration",
         description="This is a task only for test purposes",
         expected_duration_minutes=120,
@@ -81,13 +89,13 @@ def longer_task(session, user):
 
 
 @pytest.fixture
-def deadline_task(session, user):
+def deadline_task(session: Session, user: User) -> Task:
     tomorrow: dt.datetime = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)
     deadline = tomorrow.replace(
         hour=14, minute=0, second=0, microsecond=0, tzinfo=dt.timezone.utc
     )
     task = Task(
-        user_id=user.id,
+        user_id=user.id, # type: ignore[attr-defined]
         title="Test with deadline",
         description="This taks is a simple task with a deadline",
         expected_duration_minutes=60,
@@ -101,13 +109,13 @@ def deadline_task(session, user):
 
 
 @pytest.fixture
-def later_deadline_task(session, user):
+def later_deadline_task(session: Session, user: User) -> Task:
     tomorrow: dt.datetime = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=2)
     deadline = tomorrow.replace(
         hour=14, minute=0, second=0, microsecond=0, tzinfo=dt.timezone.utc
     )
     task = Task(
-        user_id=user.id,
+        user_id=user.id,  # type: ignore[attr-defined]
         title="Test with later deadline",
         description="This taks is a simple task with a deadline",
         expected_duration_minutes=60,
@@ -121,13 +129,13 @@ def later_deadline_task(session, user):
 
 
 @pytest.fixture
-def urgent_later_deadline_task(session, user):
+def urgent_later_deadline_task(session: Session, user: User) -> Task:
     tomorrow: dt.datetime = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=2)
     deadline = tomorrow.replace(
         hour=14, minute=0, second=0, microsecond=0, tzinfo=dt.timezone.utc
     )
     task = Task(
-        user_id=user.id,
+        user_id=user.id,  # type: ignore[attr-defined]
         title="urgent Test with later deadline",
         description="This taks is a simple task with a deadline",
         expected_duration_minutes=60,
@@ -141,9 +149,9 @@ def urgent_later_deadline_task(session, user):
 
 
 @pytest.fixture
-def urgent_task(session, user):
+def urgent_task(session: Session, user: User) -> Task:
     task = Task(
-        user_id=user.id,
+        user_id=user.id,  # type: ignore[attr-defined]
         title="urgent Test Task",
         description="This taks is a simple task with a deadline",
         expected_duration_minutes=60,
@@ -157,13 +165,13 @@ def urgent_task(session, user):
 
 @pytest.fixture
 def task_list(
-    task,
-    urgent_task,
-    longer_task,
-    deadline_task,
-    later_deadline_task,
-    urgent_later_deadline_task,
-):
+    task: Task,
+    urgent_task: Task,
+    longer_task: Task,
+    deadline_task: Task,
+    later_deadline_task: Task,
+    urgent_later_deadline_task: Task,
+) -> list[Task]:
     """Return a list of all task fixtures for testing."""
     return [
         task,
@@ -176,7 +184,7 @@ def task_list(
 
 
 @pytest.fixture
-def schedule_item(session, user, task):
+def schedule_item(session: Session, user: User, task: Task) -> ScheduleItem:
     tomorrow = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)
     start_time = tomorrow.replace(
         hour=9, minute=0, second=0, microsecond=0, tzinfo=dt.timezone.utc
@@ -184,8 +192,8 @@ def schedule_item(session, user, task):
     end_time = start_time + dt.timedelta(hours=2)
 
     schedule_item = ScheduleItem(
-        user_id=user.id,
-        task_id=task.id,
+        user_id=user.id,  # type: ignore[attr-defined]
+        task_id=task.id,  # type: ignore[attr-defined]
         start_time=start_time,
         end_time=end_time,
         source="task",
@@ -198,16 +206,16 @@ def schedule_item(session, user, task):
 
 
 @pytest.fixture
-def schedule_item_list(session, user):
+def schedule_item_list(session: Session, user: User) -> list[ScheduleItem]:
     tomorrow = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)
     start_time = tomorrow.replace(
         hour=9, minute=0, second=0, microsecond=0, tzinfo=dt.timezone.utc
     )
     end_time = start_time + dt.timedelta(hours=2)
-    schedule_items = []
+    schedule_items: list[ScheduleItem] = []
     for i in range(10):
         schedule_item = ScheduleItem(
-            user_id=user.id,
+            user_id=user.id,  # type: ignore[attr-defined]
             task_id=None,
             start_time=start_time + dt.timedelta(days=i),
             end_time=end_time + dt.timedelta(days=i),
@@ -222,8 +230,8 @@ def schedule_item_list(session, user):
 
 
 @pytest.fixture
-def weekly_availability(session, user):
-    availability = WeeklyAvailability(user_id=user.id, timezone="UTC")
+def weekly_availability(session: Session, user: User) -> WeeklyAvailability:
+    availability = WeeklyAvailability(user_id=user.id)  # type: ignore[attr-defined]
     session.add(availability)
     session.commit()
     session.refresh(availability)
@@ -231,20 +239,20 @@ def weekly_availability(session, user):
 
 
 @pytest.fixture
-def daily_windows(session, weekly_availability):
+def daily_windows(session: Session, weekly_availability: WeeklyAvailability) -> None:
     first_start_time = dt.time(hour=7, minute=0)
     first_end_time = dt.time(hour=12, minute=0)
     second_start_time = dt.time(hour=13, minute=0)
     second_end_time = dt.time(hour=17, minute=0)
     for i in range(7):
-        first_daily_window = DailyWindow(
-            weekly_availability_id=weekly_availability.id,
+        first_daily_window = DailyWindowModel(
+            weekly_availability_id=weekly_availability.id,  # type: ignore[attr-defined]
             day_of_week=i,
             start_time=first_start_time,
             end_time=first_end_time,
         )
-        second_daily_window = DailyWindow(
-            weekly_availability_id=weekly_availability.id,
+        second_daily_window = DailyWindowModel(
+            weekly_availability_id=weekly_availability.id,  # type: ignore[attr-defined]
             day_of_week=i,
             start_time=second_start_time,
             end_time=second_end_time,
@@ -260,10 +268,10 @@ def daily_windows(session, weekly_availability):
 
 
 @pytest.fixture
-def client(session):
+def client(session: Session) -> Generator[TestClient, None, None]:
     from app.main import app
 
-    def override_get_db():
+    def override_get_db() -> Generator[Session, None, None]:
         try:
             yield session
         finally:
@@ -276,7 +284,7 @@ def client(session):
 
 
 @pytest.fixture
-def busy_interval(schedule_item):
+def busy_interval(schedule_item: ScheduleItem) -> BusyInterval:
     busy_interval = schedule_item_to_busy_interval(schedule_item)
     return busy_interval
 
@@ -300,7 +308,12 @@ def daily_window_end():
 
 
 @st.composite
-def datetime_strategy(draw, min_date=None, max_date=None, timezone_aware=True):
+def datetime_strategy(
+    draw: "DrawFn",
+    min_date: dt.datetime | None = None,
+    max_date: dt.datetime | None = None,
+    timezone_aware: bool = True,
+) -> dt.datetime:
     """Generate realistic datetime objects for testing."""
     from app.core.timezone import ensure_utc
 
@@ -309,13 +322,15 @@ def datetime_strategy(draw, min_date=None, max_date=None, timezone_aware=True):
 
     if min_date is None:
         min_date = base_date - dt.timedelta(days=30)
-    if max_date is None and min_date is not None:
+    if max_date is None:
         max_date = min_date + dt.timedelta(days=365)
 
-    min_naive = min_date.replace(tzinfo=None)
-    max_naive = max_date.replace(tzinfo=None)
+    min_naive = min_date.replace(tzinfo=None) if min_date else None
+    max_naive = max_date.replace(tzinfo=None) if max_date else None
 
     # Generate random datetime
+    if min_naive is None or max_naive is None:
+        raise ValueError("min_date and max_date must be provided or calculable")
     random_datetime = draw(
         st.datetimes(
             min_value=min_naive,
@@ -323,14 +338,19 @@ def datetime_strategy(draw, min_date=None, max_date=None, timezone_aware=True):
         )
     )
     if timezone_aware:
-        random_datetime = ensure_utc(random_datetime)
+        result = ensure_utc(random_datetime)
+        if result is None:
+            raise ValueError("ensure_utc returned None")
+        random_datetime = result
 
     # Round to nearest minute for cleaner testing
     return random_datetime.replace(second=0, microsecond=0)
 
 
 @st.composite
-def time_window_strategy(draw, min_hour=0, max_hour=23):
+def time_window_strategy(
+    draw: "DrawFn", min_hour: int = 0, max_hour: int = 23
+) -> tuple[dt.time, dt.time]:
     """Generate realistic time windows (start_time, end_time)."""
     start_hour = draw(st.integers(min_value=min_hour, max_value=max_hour - 2))
     end_hour = draw(st.integers(min_value=start_hour + 1, max_value=max_hour))
@@ -345,7 +365,11 @@ def time_window_strategy(draw, min_hour=0, max_hour=23):
 
 
 @st.composite
-def busy_interval_strategy(draw, min_date=None, max_date=None):
+def busy_interval_strategy(
+    draw: "DrawFn",
+    min_date: dt.datetime | None = None,
+    max_date: dt.datetime | None = None,
+) -> BusyInterval:
     """Generate realistic BusyInterval objects for testing."""
     start_time = draw(datetime_strategy(min_date, max_date))
 
@@ -367,14 +391,18 @@ def busy_interval_strategy(draw, min_date=None, max_date=None):
 
 @st.composite
 def busy_intervals_strategy(
-    draw, min_count=0, max_count=10, min_date=None, max_date=None
-):
+    draw: "DrawFn",
+    min_count: int = 0,
+    max_count: int = 10,
+    min_date: dt.datetime | None = None,
+    max_date: dt.datetime | None = None,
+) -> list[BusyInterval]:
     count = draw(st.integers(min_value=min_count, max_value=max_count))
 
     if count == 0:
         return []
 
-    intervals = []
+    intervals: list[BusyInterval] = []
     for _ in range(count):
         interval = draw(busy_interval_strategy(min_date=min_date, max_date=max_date))
         intervals.append(interval)
@@ -383,7 +411,7 @@ def busy_intervals_strategy(
 
 
 @st.composite
-def schedulable_task_strategy(draw):
+def schedulable_task_strategy(draw: "DrawFn") -> SchedulableTask:
     """Generate realistic SchedulableTask objects for testing."""
     # Use a fixed reference point to avoid non-deterministic datetime.now() calls
     base_date = dt.datetime(2024, 1, 1, tzinfo=dt.timezone.utc)
@@ -406,7 +434,7 @@ def schedulable_task_strategy(draw):
 
 
 @st.composite
-def weekly_availability_strategy(draw):
+def weekly_availability_strategy(draw: "DrawFn") -> SchedulerAvailability:
     """Generate realistic WeeklyAvailability objects for testing."""
     windows: dict[DayOfWeek, list[DailyWindowSchema]] = {}
 
@@ -439,7 +467,7 @@ def weekly_availability_strategy(draw):
 
 
 @st.composite
-def time_slot_strategy(draw, min_start):
+def time_slot_strategy(draw: "DrawFn", min_start: dt.datetime) -> TimeSlot:
     """Generate realistic TimeSlot objects for testing."""
     # Random offset between 30 minutes and 10 hours for duration
     random_offset = draw(st.integers(min_value=30, max_value=600))
@@ -460,11 +488,11 @@ def time_slot_strategy(draw, min_start):
 
 
 @st.composite
-def available_slots_strategy(draw):
+def available_slots_strategy(draw: "DrawFn") -> AvailableSlots:
     """Generate realistic AvailableSlots objects for testing."""
     amount_of_slots = draw(st.integers(min_value=1, max_value=21))
     min_start = get_next_weekday(now_utc())
-    slots = []
+    slots: list[TimeSlot] = []
     for _ in range(amount_of_slots):
         slot = draw(time_slot_strategy(min_start=min_start))
         min_start = slot.end

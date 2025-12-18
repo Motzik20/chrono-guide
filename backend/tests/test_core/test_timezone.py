@@ -11,6 +11,7 @@ from app.core.timezone import (
     now_utc,
     parse_user_datetime,
 )
+from app.models.user_setting import UserSetting
 from app.schemas.availability import DayOfWeek
 
 
@@ -26,6 +27,7 @@ class TestEnsureUTC:
         naive_dt = dt.datetime(2024, 1, 1, 12, 0, 0)
         result = ensure_utc(naive_dt)
 
+        assert result is not None
         assert result.tzinfo == dt.timezone.utc
         assert result.year == 2024
         assert result.month == 1
@@ -39,6 +41,7 @@ class TestEnsureUTC:
         utc_dt = dt.datetime(2024, 1, 1, 12, 0, 0, tzinfo=dt.timezone.utc)
         result = ensure_utc(utc_dt)
 
+        assert result is not None
         assert result.tzinfo == dt.timezone.utc
         assert result == utc_dt
 
@@ -49,6 +52,7 @@ class TestEnsureUTC:
         est_dt = dt.datetime(2024, 1, 1, 7, 0, 0, tzinfo=est_tz)
         result = ensure_utc(est_dt)
 
+        assert result is not None
         assert result.tzinfo == dt.timezone.utc
         assert result.hour == 12
         assert result.minute == 0
@@ -66,6 +70,7 @@ class TestConvertToUserTimezone:
         utc_dt = dt.datetime(2024, 1, 1, 12, 0, 0, tzinfo=dt.timezone.utc)
         result = convert_to_user_timezone(utc_dt, "America/New_York")
 
+        assert result is not None
         assert result.hour == 7
         assert result.minute == 0
 
@@ -74,6 +79,7 @@ class TestConvertToUserTimezone:
         naive_dt = dt.datetime(2024, 1, 1, 12, 0, 0)
         result = convert_to_user_timezone(naive_dt, "America/New_York")
 
+        assert result is not None
         assert result.hour == 7
         assert result.minute == 0
 
@@ -142,23 +148,22 @@ class TestGetUserTimezone:
     def test_get_user_timezone_with_setting(self):
         """Test get_user_timezone when user has timezone setting."""
         mock_session = Mock()
-        mock_setting = Mock()
-        mock_setting.value = "America/New_York"
+        mock_setting: UserSetting = UserSetting(user_id=1, key="timezone", value="America/New_York")
 
-        mock_session.query.return_value.filter.return_value.first.return_value = (
-            mock_setting
-        )
+        mock_result = Mock()
+        mock_result.first.return_value = mock_setting
+        mock_session.exec.return_value = mock_result
 
-        result = get_user_timezone(mock_session, 1)
+        result: str = get_user_timezone(mock_session, 1)
 
         assert result == "America/New_York"
 
     def test_get_user_timezone_without_setting(self):
         """Test get_user_timezone when user has no timezone setting (default to UTC)."""
         mock_session = Mock()
-        mock_session.query.return_value.filter.return_value.first.return_value = None
+        mock_session.exec.return_value.first.return_value = None
 
-        result = get_user_timezone(mock_session, 1)
+        result: str= get_user_timezone(mock_session, 1)
 
         assert result == "UTC"
 
@@ -352,24 +357,29 @@ class TestTimezoneIntegration:
         user_datetime = dt.datetime(2024, 1, 1, 14, 0, 0)
 
         utc_datetime = parse_user_datetime(user_datetime, user_timezone)
+        assert utc_datetime is not None
         assert utc_datetime.tzinfo == dt.timezone.utc
         assert utc_datetime.hour == 19
 
         display_datetime = convert_to_user_timezone(utc_datetime, user_timezone)
+        assert display_datetime is not None
         assert display_datetime.hour == 14
 
     def test_ensure_utc_with_mixed_timezones(self):
         """Test ensure_utc with various timezone scenarios."""
         naive_dt = dt.datetime(2024, 1, 1, 12, 0, 0)
         utc_naive = ensure_utc(naive_dt)
+        assert utc_naive is not None
         assert utc_naive.tzinfo == dt.timezone.utc
 
         utc_dt = dt.datetime(2024, 1, 1, 12, 0, 0, tzinfo=dt.timezone.utc)
         utc_result = ensure_utc(utc_dt)
+        assert utc_result is not None
         assert utc_result == utc_dt
 
         est_tz = dt.timezone(dt.timedelta(hours=-5))
         est_dt = dt.datetime(2024, 1, 1, 7, 0, 0, tzinfo=est_tz)
         utc_est = ensure_utc(est_dt)
+        assert utc_est is not None
         assert utc_est.tzinfo == dt.timezone.utc
         assert utc_est.hour == 12

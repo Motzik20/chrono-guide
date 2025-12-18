@@ -1,7 +1,8 @@
 import datetime as dt
 from typing import Any
 
-import pytz
+import pytz  # type: ignore[import-untyped]
+from sqlmodel import Session, select
 
 
 def ensure_utc(dt_obj: dt.datetime | None) -> dt.datetime | None:
@@ -63,17 +64,17 @@ def parse_user_datetime(user_dt: dt.datetime, user_timezone: str) -> dt.datetime
     return user_dt.astimezone(dt.timezone.utc)
 
 
-def get_user_timezone(session, user_id: int) -> str:
+def get_user_timezone(session: Session, user_id: int) -> str:
     """
     Get user's timezone from settings, default to UTC.
     """
     from app.models.user_setting import UserSetting
 
-    setting = (
-        session.query(UserSetting)
-        .filter(UserSetting.user_id == user_id, UserSetting.key == "timezone")
-        .first()
-    )
+    setting: UserSetting | None = session.exec(
+        select(UserSetting)
+        .where(UserSetting.user_id == user_id)
+        .where(UserSetting.key == "timezone")
+    ).first()
 
     return setting.value if setting else "UTC"
 
@@ -107,7 +108,7 @@ def get_next_half_hour(now: dt.datetime) -> dt.datetime:
 
 
 def get_next_weekday(current_datetime: dt.datetime, weekday: int = 0) -> dt.datetime:
-    current_day_of_week: dt.date = current_datetime.weekday()
+    current_day_of_week: int = current_datetime.weekday()
     days_ahead = (weekday - current_day_of_week - 1) % 7 + 1
     next_weekday = current_datetime.replace(
         hour=0, minute=0, second=0, microsecond=0
