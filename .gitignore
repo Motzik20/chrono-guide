@@ -1,3 +1,5 @@
 *.env
 .hypothesis
 TODO.md
+.vscode
+.pytest_cache
