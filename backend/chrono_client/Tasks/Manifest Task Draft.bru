@@ -1,0 +1,31 @@
+meta {
+  name: Manifest Task Draft
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/tasks
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "title": "MaxSum Method Specification and Implementation",
+      "description": "Specify the postconditions for the MaxSum method, create a test case with assertions to verify the specification (using the IDE's verifier, not execution), and then implement the MaxSum method in Dafny.",
+      "expected_duration_minutes": 75,
+      "tips": [
+        "Use Dafny's 'ensures' clause to define precise postconditions.",
+        "Write assertions in a test method to verify your specification within the Dafny IDE.",
+        "Iteratively refine your specification based on verification feedback before implementing.",
+        "Consult the Dafny online tutorial for syntax and verification concepts."
+      ],
+      "priority" : 2
+    }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
