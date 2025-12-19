@@ -12,6 +12,7 @@ def create_task(task: TaskCreate, user_id: int, session: Session) -> Task:
     task_model: Task = Task.model_validate(task)
     task_model.user_id = user_id
     session.add(task_model)
+    session.flush()
     session.refresh(task_model)
     return task_model
 
@@ -22,6 +23,7 @@ def create_tasks(tasks: list[TaskCreate], user_id: int, session: Session) -> lis
         task_model.user_id = user_id
         task_models.append(task_model)
     session.add_all(task_models)
+    session.flush()
     for task_model in task_models:
         session.refresh(task_model)
     return task_models
