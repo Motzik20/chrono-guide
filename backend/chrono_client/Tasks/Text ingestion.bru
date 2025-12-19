@@ -1,0 +1,16 @@
+meta {
+  name: Text ingestion
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/ingest/file
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

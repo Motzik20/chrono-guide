@@ -69,19 +69,13 @@ class TaskExtracted(BaseModel):
     tips: list[str] = Field(default_factory=list)
 
 
-# Request schema for image analysis - expects base64 encoded image
-class TaskImageAnalysisRequest(BaseModel):
-    """Request schema for image analysis - expects base64 encoded image"""
-    image_description: str  # base64 encoded image data
-
-# Result from AI analysis of an image - extracted task information
 class TaskAnalysisResult(BaseModel):
-    """Result from AI analysis of an image - extracted task information"""
+    """Result from AI analysis of an file or text- extracted task information"""
     title: str
     description: str
     expected_duration_minutes: int
     tips: list[str] = Field(default_factory=list)
 
-# Only if you ingest raw text via JSON; for images/PDFs, use FastAPI UploadFile
-class TaskExtractTextRequest(BaseModel):
-    text: str
+class FileAnalysisRequest(BaseModel):
+    file_content: bytes
+    content_type: str
