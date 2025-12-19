@@ -23,7 +23,6 @@ class UserUpdate(UserBase):
     email: str | None = Field(default=None, min_length=1, max_length=255)
     password: str | None = Field(default=None, min_length=1, max_length=128)
 
-
 class UserOut(BaseModel):
     id: int
     email: str
