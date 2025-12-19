@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, File, HTTPException, UploadFile
 from sqlmodel import Session
 
 from app.core.auth import get_current_user_id
-from app.core.db import get_session
+from app.core.db import get_db
 from app.crud import task_crud
 from app.models.task import Task
 from app.schemas.task import FileAnalysisRequest, TaskCreate, TaskDraft
@@ -33,9 +33,9 @@ async def ingest_text(text: str = Body(...), chrono_agent: ChronoAgent = Depends
     return await chrono_agent.analyze_tasks_from_text(text)
 
 @router.post("/")
-async def create_task(task: TaskCreate = Body(...), user_id: int = Depends(get_current_user_id), session: Session = Depends(get_session)) -> Task:
+async def create_task(task: TaskCreate = Body(...), user_id: int = Depends(get_current_user_id), session: Session = Depends(get_db)) -> Task:
     return task_crud.create_task(task, user_id, session)
 
 @router.post("/bulk")
-async def create_tasks(tasks: list[TaskCreate] = Body(...), user_id: int = Depends(get_current_user_id), session: Session = Depends(get_session)) -> list[Task]:
+async def create_tasks(tasks: list[TaskCreate] = Body(...), user_id: int = Depends(get_current_user_id), session: Session = Depends(get_db)) -> list[Task]:
     return task_crud.create_tasks(tasks, user_id, session)

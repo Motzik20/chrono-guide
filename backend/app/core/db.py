@@ -40,13 +40,6 @@ def create_db_engine() -> Engine:
         raise ValueError("DATABASE_URL is not set")
     return create_engine(url)
 
-
-def get_session() -> Session:
-    if _session_maker is None:
-        raise ValueError("Database not initialized properly")
-    return _session_maker()
-
-
 def _get_session() -> Generator[Session, None, None]:
     assert _session_maker
     session: Session = _session_maker()
