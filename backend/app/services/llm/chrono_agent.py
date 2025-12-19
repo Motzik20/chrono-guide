@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai.types import GenerateContentResponse, Part
 
-from app.schemas.task import FileAnalysisRequest, TaskAnalysisResult
+from app.schemas.task import FileAnalysisRequest, TaskDraft
 
 
 class ChronoAgent:
@@ -21,7 +21,7 @@ class ChronoAgent:
 
     async def analyze_tasks_from_file(
         self, file_request: FileAnalysisRequest
-    ) -> list[TaskAnalysisResult]:
+    ) -> list[TaskDraft]:
         prompt: str = "From the file, identify and list all tasks. For each task, include: Concise Title, Description, Estimated Duration, and 2-4 actionable Tips derived from the visual context."
 
         contents_parts: list[Part] = [
@@ -39,18 +39,18 @@ class ChronoAgent:
             contents=contents_parts,
             config={
                 "response_mime_type": "application/json",
-                "response_schema": list[TaskAnalysisResult],
+                "response_schema": list[TaskDraft],
             },
         )
         if response.text is None:
             return []
         json_task_list: list[dict[str, Any]] = json.loads(response.text)
         analyzed_tasks = [
-            TaskAnalysisResult.model_validate(task_data) for task_data in json_task_list
+            TaskDraft.model_validate(task_data) for task_data in json_task_list
         ]
         return analyzed_tasks
 
-    async def analyze_tasks_from_text(self, text: str) -> list[TaskAnalysisResult]:
+    async def analyze_tasks_from_text(self, text: str) -> list[TaskDraft]:
         prompt: str = "From the text, identify and list all tasks. For each task, include: Concise Title, Description, Estimated Duration, and 2-4 actionable Tips derived from the text."
 
         contents_parts: list[Part] = [
@@ -63,13 +63,13 @@ class ChronoAgent:
             contents=contents_parts,
             config={
                 "response_mime_type": "application/json",
-                "response_schema": list[TaskAnalysisResult],
+                "response_schema": list[TaskDraft],
             },
         )
         if response.text is None:
             return []
         json_task_list: list[dict[str, Any]] = json.loads(response.text)
         analyzed_tasks = [
-            TaskAnalysisResult.model_validate(task_data) for task_data in json_task_list
+            TaskDraft.model_validate(task_data) for task_data in json_task_list
         ]
         return analyzed_tasks
