@@ -69,7 +69,7 @@ class TaskExtracted(BaseModel):
     tips: list[str] = Field(default_factory=list)
 
 
-class TaskAnalysisResult(BaseModel):
+class TaskDraft(BaseModel):
     """Result from AI analysis of an file or text- extracted task information"""
     title: str
     description: str

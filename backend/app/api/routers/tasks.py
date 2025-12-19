@@ -1,8 +1,13 @@
 from functools import cache
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, UploadFile
+from sqlmodel import Session
 
-from app.schemas.task import FileAnalysisRequest, TaskAnalysisResult
+from app.core.auth import get_current_user_id
+from app.core.db import get_db
+from app.crud import task_crud
+from app.models.task import Task
+from app.schemas.task import FileAnalysisRequest, TaskCreate, TaskDraft
 from app.services.llm.chrono_agent import ChronoAgent
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -12,7 +17,7 @@ def get_chrono_agent() -> ChronoAgent:
     return ChronoAgent()
 
 @router.post("/ingest/file")
-async def ingest_file(file: UploadFile = File(...), chrono_agent: ChronoAgent = Depends(get_chrono_agent)) -> list[TaskAnalysisResult]:
+async def ingest_file(file: UploadFile = File(...), chrono_agent: ChronoAgent = Depends(get_chrono_agent)) -> list[TaskDraft]:
     allowed_content_types: list[str] = ["image/jpeg", "image/png", "application/pdf"]
     content_type: str | None = file.content_type
     if content_type is None:
@@ -24,5 +29,13 @@ async def ingest_file(file: UploadFile = File(...), chrono_agent: ChronoAgent = 
     return await chrono_agent.analyze_tasks_from_file(file_request)
 
 @router.post("/ingest/text")
-async def ingest_text(text: str = Body(...), chrono_agent: ChronoAgent = Depends(get_chrono_agent)) -> list[TaskAnalysisResult]:
+async def ingest_text(text: str = Body(...), chrono_agent: ChronoAgent = Depends(get_chrono_agent)) -> list[TaskDraft]:
     return await chrono_agent.analyze_tasks_from_text(text)
+
+@router.post("/")
+async def create_task(task: TaskCreate = Body(...), user_id: int = Depends(get_current_user_id), session: Session = Depends(get_db)) -> Task:
+    return task_crud.create_task(task, user_id, session)
+
+@router.post("/bulk")
+async def create_tasks(tasks: list[TaskCreate] = Body(...), user_id: int = Depends(get_current_user_id), session: Session = Depends(get_db)) -> list[Task]:
+    return task_crud.create_tasks(tasks, user_id, session)

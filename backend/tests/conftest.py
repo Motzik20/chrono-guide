@@ -1,10 +1,13 @@
 import datetime as dt
 from collections.abc import Generator
 from typing import TYPE_CHECKING
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
 from hypothesis import strategies as st
+
+from app.schemas.task import TaskDraft
 
 if TYPE_CHECKING:
     from hypothesis.strategies import DrawFn
@@ -14,7 +17,6 @@ from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from app.core.db import get_db
 from app.core.timezone import get_next_weekday, now_utc
 from app.models.availability import DailyWindowModel, WeeklyAvailability
 from app.models.schedule_item import ScheduleItem
@@ -269,13 +271,13 @@ def daily_windows(session: Session, weekly_availability: WeeklyAvailability) -> 
 
 @pytest.fixture
 def client(session: Session) -> Generator[TestClient, None, None]:
-    from app.main import app
+    from app.app_factory import create_app
+    from app.core.db import get_db
+
+    app = create_app(local=True)
 
     def override_get_db() -> Generator[Session, None, None]:
-        try:
-            yield session
-        finally:
-            pass
+        yield session
 
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:
@@ -305,6 +307,39 @@ def daily_window_end():
         hour=13, minute=0, second=0, microsecond=0, tzinfo=dt.timezone.utc
     )
     return end_time
+
+@pytest.fixture
+def mock_task_drafts() -> list[TaskDraft]:
+    """Mock task drafts returned by ChronoAgent."""
+    return [
+        TaskDraft(
+            title="Test Task 1",
+            description="First test task",
+            expected_duration_minutes=60,
+            tips=["Tip 1", "Tip 2"],
+        ),
+        TaskDraft(
+            title="Test Task 2",
+            description="Second test task",
+            expected_duration_minutes=30,
+            tips=[],
+        ),
+    ]
+
+@pytest.fixture
+def mock_chrono_agent(client: TestClient, mock_task_drafts: list[TaskDraft]) -> Generator[AsyncMock, None, None]:
+    """Fixture that mocks ChronoAgent for a test."""
+    from app.api.routers.tasks import get_chrono_agent
+
+    app = client.app
+    mock_agent = AsyncMock()
+    mock_agent.analyze_tasks_from_file = AsyncMock(return_value=mock_task_drafts)
+    mock_agent.analyze_tasks_from_text = AsyncMock(return_value=mock_task_drafts)
+
+    app.dependency_overrides[get_chrono_agent] = lambda: mock_agent  # type: ignore[attr-defined]
+    yield mock_agent
+    app.dependency_overrides.pop(get_chrono_agent, None)  # type: ignore[attr-defined]
+
 
 
 @st.composite
@@ -498,3 +533,4 @@ def available_slots_strategy(draw: "DrawFn") -> AvailableSlots:
         min_start = slot.end
         slots.append(slot)
     return AvailableSlots(slots=slots)
+
