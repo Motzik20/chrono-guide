@@ -1,0 +1,29 @@
+default:
+  image: python:3.11.13
+
+before_script:
+  - pip install --upgrade pip
+  - pip install poetry
+  - poetry config virtualenvs.create false
+  - cd backend
+  - poetry install --no-interaction --no-ansi
+
+stages:
+  - test
+  - build
+
+test:
+  stage: test
+  script:
+    - poetry run pytest tests/ -v
+  only:
+    - merge_requests
+    - master
+
+build:
+  stage: build
+  script:
+    - poetry build
+  only:
+    - merge_requests
+    - master

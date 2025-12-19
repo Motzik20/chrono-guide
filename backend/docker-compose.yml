@@ -20,16 +20,16 @@ services:
 
   api:
     build: .
-    working_dir: /app
+    working_dir: /backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - DATABASE_URL=postgresql://chrono:chrono@db:5432/chrono
     volumes:
-      - ./app:/app/app
-      - ./alembic.ini:/app/alembic.ini
-      - ./app/alembic:/app/app/alembic
-      - ./pyproject.toml:/app/pyproject.toml
-      - ./poetry.lock:/app/poetry.lock
+      - ./app:/backend/app
+      - ./alembic.ini:/backend/alembic.ini
+      - ./app/alembic:/backend/app/alembic
+      - ./pyproject.toml:/backend/pyproject.toml
+      - ./poetry.lock:/backend/poetry.lock
     ports:
       - "8000:8000"
     depends_on:

@@ -2,7 +2,7 @@
 name = "app"
 version = "0.1.0"
 description = ""
-authors = ["Moritz Scheck"] # Poetry requires an author
+authors = ["Moritz Scheck"] 
 readme = "README.md"
 
 [tool.poetry.dependencies]
