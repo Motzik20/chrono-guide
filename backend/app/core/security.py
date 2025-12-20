@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import bcrypt
 import jwt
 from dotenv import load_dotenv
 
@@ -31,3 +32,14 @@ def decode_access_token(token: str) -> dict[str, Any]:
         raise ValueError("Token has expired")
     except jwt.InvalidTokenError:
         raise ValueError("Invalid token")
+
+def hash_password(password: str) -> str:
+    bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hash = bcrypt.hashpw(bytes, salt)
+    return hash.decode('utf-8')
+
+def check_password(password: str, hashed_password: str) -> bool:
+    bytes = password.encode('utf-8')
+    hashed_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(bytes, hashed_bytes)

@@ -17,7 +17,7 @@ def get_chrono_agent() -> ChronoAgent:
     return ChronoAgent()
 
 @router.post("/ingest/file")
-async def ingest_file(file: UploadFile = File(...), chrono_agent: ChronoAgent = Depends(get_chrono_agent)) -> list[TaskDraft]:
+async def ingest_file(file: UploadFile = File(...), chrono_agent: ChronoAgent = Depends(get_chrono_agent), user_id: int = Depends(get_current_user_id)) -> list[TaskDraft]:
     allowed_content_types: list[str] = ["image/jpeg", "image/png", "application/pdf"]
     content_type: str | None = file.content_type
     if content_type is None:
@@ -29,7 +29,7 @@ async def ingest_file(file: UploadFile = File(...), chrono_agent: ChronoAgent = 
     return await chrono_agent.analyze_tasks_from_file(file_request)
 
 @router.post("/ingest/text")
-async def ingest_text(text: str = Body(...), chrono_agent: ChronoAgent = Depends(get_chrono_agent)) -> list[TaskDraft]:
+async def ingest_text(text: str = Body(...), chrono_agent: ChronoAgent = Depends(get_chrono_agent), user_id: int = Depends(get_current_user_id)) -> list[TaskDraft]:
     return await chrono_agent.analyze_tasks_from_text(text)
 
 @router.post("/")

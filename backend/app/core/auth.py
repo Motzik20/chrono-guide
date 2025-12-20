@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session
 
@@ -14,17 +14,17 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     token = credentials.credentials
     try:
         payload: dict[str, Any] = decode_access_token(token)
-        user_id: int | None = payload["sub"]
+        user_id: int | None = payload.get("sub")
         if user_id is None:
-            raise ValueError("User ID is required")
+            raise HTTPException(status_code=401, detail="Invalid token")
         user = session.get(User, user_id)
         if user is None:
-            raise ValueError("User not found")
+            raise HTTPException(status_code=401, detail="Invalid token")
         return user
     except ValueError:
-        raise ValueError("Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 def get_current_user_id(current_user: User = Depends(get_current_user)) -> int:
     if current_user.id is None:
-        raise ValueError("User ID is required")
+        raise HTTPException(status_code=401, detail="Invalid token")
     return current_user.id
