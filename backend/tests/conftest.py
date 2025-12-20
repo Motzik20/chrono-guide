@@ -1,18 +1,11 @@
 import datetime as dt
 from collections.abc import Generator
-from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
 from hypothesis import strategies as st
-
-from app.schemas.task import TaskDraft
-
-if TYPE_CHECKING:
-    from hypothesis.strategies import DrawFn
-else:
-    DrawFn = object  # type: ignore[misc,assignment]
+from hypothesis.strategies import DrawFn
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
@@ -24,6 +17,7 @@ from app.models.task import Task
 from app.models.user import User
 from app.schemas.availability import DailyWindow as DailyWindowSchema
 from app.schemas.availability import DayOfWeek
+from app.schemas.task import TaskDraft
 from app.services.scheduling_service import (
     AvailableSlots,
     BusyInterval,

@@ -1,4 +1,3 @@
-from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
 from fastapi.testclient import TestClient
