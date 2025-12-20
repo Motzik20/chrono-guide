@@ -14,5 +14,6 @@ async def get_registration(user: UserCreate = Body(...), session: Session = Depe
     return user_crud.create_user(user, session)
 
 @router.post("/login")
-async def login(user: UserLogin = Body(...), session: Session = Depends(get_db)) -> User:
+async def login(user: UserLogin = Body(...), session: Session = Depends(get_db)) -> dict[str, str]:
     return user_crud.login(user, session)
+
