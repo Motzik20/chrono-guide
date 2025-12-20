@@ -19,17 +19,17 @@ services:
       retries: 10
 
   api:
-    build: .
+    build: ./backend
     working_dir: /backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
-      - DATABASE_URL=postgresql://chrono:chrono@db:5432/chrono
+      - DATABASE_URL=postgresql+psycopg://chrono:chrono@db:5432/chrono
     volumes:
-      - ./app:/backend/app
-      - ./alembic.ini:/backend/alembic.ini
-      - ./app/alembic:/backend/app/alembic
-      - ./pyproject.toml:/backend/pyproject.toml
-      - ./poetry.lock:/backend/poetry.lock
+      - ./backend/app:/backend/app
+      - ./backend/alembic.ini:/backend/alembic.ini
+      - ./backend/app/alembic:/backend/app/alembic
+      - ./backend/pyproject.toml:/backend/pyproject.toml
+      - ./backend/poetry.lock:/backend/poetry.lock
     ports:
       - "8000:8000"
     depends_on:
