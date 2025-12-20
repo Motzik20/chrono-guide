@@ -1,6 +1,5 @@
 import os
 from collections.abc import Generator
-from typing import cast
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
@@ -17,7 +16,7 @@ def init_db(local: bool) -> None:
         _database = create_local_db_engine()
     else:
         _database = create_db_engine()
-    _session_maker = cast(sessionmaker[Session], sessionmaker(autocommit=False, autoflush=False, bind=_database))
+    _session_maker = sessionmaker(class_=Session, autocommit=False, autoflush=False, bind=_database)
 
 
 def create_local_db_engine() -> Engine:

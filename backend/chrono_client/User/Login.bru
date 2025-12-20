@@ -1,0 +1,23 @@
+meta {
+  name: Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/users/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "test@mail.com",
+    "password": "superSecret"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

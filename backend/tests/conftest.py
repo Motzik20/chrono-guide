@@ -1,18 +1,11 @@
 import datetime as dt
 from collections.abc import Generator
-from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
 from hypothesis import strategies as st
-
-from app.schemas.task import TaskDraft
-
-if TYPE_CHECKING:
-    from hypothesis.strategies import DrawFn
-else:
-    DrawFn = object  # type: ignore[misc,assignment]
+from hypothesis.strategies import DrawFn
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
@@ -24,6 +17,7 @@ from app.models.task import Task
 from app.models.user import User
 from app.schemas.availability import DailyWindow as DailyWindowSchema
 from app.schemas.availability import DayOfWeek
+from app.schemas.task import TaskDraft
 from app.services.scheduling_service import (
     AvailableSlots,
     BusyInterval,
@@ -340,7 +334,13 @@ def mock_chrono_agent(client: TestClient, mock_task_drafts: list[TaskDraft]) -> 
     yield mock_agent
     app.dependency_overrides.pop(get_chrono_agent, None)  # type: ignore[attr-defined]
 
-
+@pytest.fixture
+def mock_user_id(client: TestClient) -> Generator[int, None, None]:
+    from app.core.auth import get_current_user_id
+    app = client.app
+    app.dependency_overrides[get_current_user_id] = lambda: 1# type: ignore[attr-defined]
+    yield 1
+    app.dependency_overrides.pop(get_current_user_id, None)# type: ignore[attr-defined]
 
 @st.composite
 def datetime_strategy(

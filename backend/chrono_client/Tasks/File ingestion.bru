@@ -5,11 +5,20 @@ meta {
 }
 
 post {
-  url: {{base_url}}/ingest/file
-  body: none
+  url: {{base_url}}/tasks/ingest/file
+  body: multipartForm
   auth: inherit
+}
+
+headers {
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJ0ZXN0QG1haWwuY29tIiwiZXhwIjoxNzY2MjI4MTY1LCJpYXQiOjE3NjYyMjYzNjV9.NP_-dBYSs_g2zhd6utTwpNUOFUQQElH2dMtHqm5imv4
+}
+
+body:multipart-form {
+  file: @file(/Users/moritzscheck/Documents/studium/zuverlasessige_softwaresysteme/praktikum/prakitkum_1.pdf)
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

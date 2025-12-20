@@ -1,0 +1,23 @@
+meta {
+  name: Registration
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/users/registration
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "test@mail.com",
+    "password": "superSecret"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
