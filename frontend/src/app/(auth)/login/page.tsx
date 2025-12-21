@@ -15,7 +15,7 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (!isAuthenticated || isLoading) {
+  if (isAuthenticated || isLoading) {
     return null; // or a loading spinner while redirecting
   }
 

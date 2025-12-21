@@ -18,29 +18,38 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { AuthCard } from "./AuthCard";
 
-const loginSchema = z.object({
+const signupSchema = z.object({
   email: z.email({ message: "Invalid email address" }),
   password: z.string().min(8, { message: "Password must be at least 8 characters long" }),
-})
+  confirm_password: z.string().min(8, { message: "Confirm password must be the same as password" })
+}).superRefine((data, ctx) => {
+  if (data.password !== data.confirm_password) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Password and confirm password must be the same",
+      path: ["confirm_password"],
+    });
+  }
+});
 
-const loginResponseSchema = z.object({
+const signupResponseSchema = z.object({
   access_token: z.string(),
   token_type: z.literal("bearer"),
 })
 
-export function LoginForm() {
+export function SignupForm() {
   const { login } = useAuth();
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<z.infer<typeof signupSchema>>({
+    resolver: zodResolver(signupSchema),
     defaultValues: {
       email: "",
       password: "",
     },
   });
 
-  async function onSubmit(values: z.infer<typeof loginSchema>) {
+  async function onSubmit(values: z.infer<typeof signupSchema>) {
     try {
-      console.log("Login values:", values); const data = await apiRequest("/users/login", loginResponseSchema, {
+      console.log("Register values:", values); const data = await apiRequest("/users/register", signupResponseSchema, {
         method: "POST",
         body: JSON.stringify(values),
       });
@@ -52,7 +61,7 @@ export function LoginForm() {
   }
 
   return (
-    <AuthCard title="Welcome back" description="Login with your account" footerText="Don't have an account?" footerLinkText="Sign up" footerLinkHref="/signup"> 
+    <AuthCard title="Create an account" description="Sign up to get started" footerText="Already have an account?" footerLinkText="Login" footerLinkHref="/login"> 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
@@ -77,12 +86,22 @@ export function LoginForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <div className="flex items-center justify-between">
-                  <FormLabel>Password</FormLabel>
-                  <Link href="/forgot-password" className="text-sm font-medium underline-offset-4 hover:underline">
-                    Forgot your password?
-                  </Link>
-                </div>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input type="password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Confirm Password Field */}
+          <FormField
+            control={form.control}
+            name="confirm_password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
                 <FormControl>
                   <Input type="password" {...field} />
                 </FormControl>
@@ -93,7 +112,7 @@ export function LoginForm() {
 
           {/* Submit Button */}
           <Button type="submit" className="w-full bg-black text-white hover:bg-black/90 mt-4">
-            Login
+            Create Account
           </Button>
         </form>
       </Form>

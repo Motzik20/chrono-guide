@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { isTokenExpired } from "@/lib/utils";
 
 interface AuthContextType {
    token: string | null;
@@ -21,6 +22,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const token = localStorage.getItem("chrono_token");
         if (token) {
+            if (isTokenExpired(token)) {
+                logout();
+                return;
+            }
             setToken(token);
         }
         setIsLoading(false);
@@ -35,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = () => {
         localStorage.removeItem("chrono_token");
         setToken(null);
-        router.push("/auth/login");
+        router.push("/login");
     }
 
     return (
