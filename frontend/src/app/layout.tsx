@@ -1,23 +1,34 @@
+"use client"
+
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/auth-context";
-
-export const metadata: Metadata = {
-  title: "Chrono Guide",
-  description: "AI powered task scheduling system",
-};
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarProvider} from "@/components/ui/sidebar";
+import { usePathname } from "next/navigation";
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/signup");
   return (
     <html lang="en">
       <body>
         <AuthProvider>
-          {children}
+          {!isAuthPage && (
+            <SidebarProvider>
+            <AppSidebar />
+            <main>
+              {children}
+            </main>
+            </SidebarProvider>
+          )}
+          {isAuthPage && (
+            <>{children}</>
+          )}
         </AuthProvider>
       </body>
     </html>

@@ -10,7 +10,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
-      router.push("/auth/login");
+      router.push("/login");
     }
   }, [isAuthenticated, isLoading, router]);
 
