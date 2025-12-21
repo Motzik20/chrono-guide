@@ -18,24 +18,30 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { AuthCard } from "./AuthCard";
 
-const signupSchema = z.object({
-  email: z.email({ message: "Invalid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters long" }),
-  confirm_password: z.string().min(8, { message: "Confirm password must be the same as password" })
-}).superRefine((data, ctx) => {
-  if (data.password !== data.confirm_password) {
-    ctx.addIssue({
-      code: "custom",
-      message: "Password and confirm password must be the same",
-      path: ["confirm_password"],
-    });
-  }
-});
+const signupSchema = z
+  .object({
+    email: z.email({ message: "Invalid email address" }),
+    password: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters long" }),
+    confirm_password: z
+      .string()
+      .min(8, { message: "Confirm password must be the same as password" }),
+  })
+  .superRefine((data, ctx) => {
+    if (data.password !== data.confirm_password) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Password and confirm password must be the same",
+        path: ["confirm_password"],
+      });
+    }
+  });
 
 const signupResponseSchema = z.object({
   access_token: z.string(),
   token_type: z.literal("bearer"),
-})
+});
 
 export function SignupForm() {
   const { login } = useAuth();
@@ -49,7 +55,8 @@ export function SignupForm() {
 
   async function onSubmit(values: z.infer<typeof signupSchema>) {
     try {
-      console.log("Register values:", values); const data = await apiRequest("/users/register", signupResponseSchema, {
+      console.log("Register values:", values);
+      const data = await apiRequest("/users/register", signupResponseSchema, {
         method: "POST",
         body: JSON.stringify(values),
       });
@@ -61,10 +68,15 @@ export function SignupForm() {
   }
 
   return (
-    <AuthCard title="Create an account" description="Sign up to get started" footerText="Already have an account?" footerLinkText="Login" footerLinkHref="/login"> 
+    <AuthCard
+      title="Create an account"
+      description="Sign up to get started"
+      footerText="Already have an account?"
+      footerLinkText="Login"
+      footerLinkHref="/login"
+    >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-
           {/* Email Field */}
           <FormField
             control={form.control}
@@ -94,7 +106,7 @@ export function SignupForm() {
               </FormItem>
             )}
           />
-          
+
           {/* Confirm Password Field */}
           <FormField
             control={form.control}
@@ -111,7 +123,10 @@ export function SignupForm() {
           />
 
           {/* Submit Button */}
-          <Button type="submit" className="w-full bg-black text-white hover:bg-black/90 mt-4">
+          <Button
+            type="submit"
+            className="w-full bg-black text-white hover:bg-black/90 mt-4"
+          >
             Create Account
           </Button>
         </form>
@@ -119,4 +134,3 @@ export function SignupForm() {
     </AuthCard>
   );
 }
-

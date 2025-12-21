@@ -20,13 +20,15 @@ import { AuthCard } from "./AuthCard";
 
 const loginSchema = z.object({
   email: z.email({ message: "Invalid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters long" }),
-})
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters long" }),
+});
 
 const loginResponseSchema = z.object({
   access_token: z.string(),
   token_type: z.literal("bearer"),
-})
+});
 
 export function LoginForm() {
   const { login } = useAuth();
@@ -40,7 +42,8 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     try {
-      console.log("Login values:", values); const data = await apiRequest("/users/login", loginResponseSchema, {
+      console.log("Login values:", values);
+      const data = await apiRequest("/users/login", loginResponseSchema, {
         method: "POST",
         body: JSON.stringify(values),
       });
@@ -52,10 +55,15 @@ export function LoginForm() {
   }
 
   return (
-    <AuthCard title="Welcome back" description="Login with your account" footerText="Don't have an account?" footerLinkText="Sign up" footerLinkHref="/signup"> 
+    <AuthCard
+      title="Welcome back"
+      description="Login with your account"
+      footerText="Don't have an account?"
+      footerLinkText="Sign up"
+      footerLinkHref="/signup"
+    >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-
           {/* Email Field */}
           <FormField
             control={form.control}
@@ -79,7 +87,10 @@ export function LoginForm() {
               <FormItem>
                 <div className="flex items-center justify-between">
                   <FormLabel>Password</FormLabel>
-                  <Link href="/forgot-password" className="text-sm font-medium underline-offset-4 hover:underline">
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm font-medium underline-offset-4 hover:underline"
+                  >
                     Forgot your password?
                   </Link>
                 </div>
@@ -92,7 +103,10 @@ export function LoginForm() {
           />
 
           {/* Submit Button */}
-          <Button type="submit" className="w-full bg-black text-white hover:bg-black/90 mt-4">
+          <Button
+            type="submit"
+            className="w-full bg-black text-white hover:bg-black/90 mt-4"
+          >
             Login
           </Button>
         </form>
@@ -100,4 +114,3 @@ export function LoginForm() {
     </AuthCard>
   );
 }
-
