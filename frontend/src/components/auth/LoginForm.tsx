@@ -4,7 +4,7 @@ import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
+import { apiRequest } from "@/lib/chrono-client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,13 +22,20 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/auth-context";
 
 const loginSchema = z.object({
   email: z.email({ message: "Invalid email address" }),
   password: z.string().min(8, { message: "Password must be at least 8 characters long" }),
 })
 
+const loginResponseSchema = z.object({
+  access_token: z.string(),
+  token_type: z.literal("bearer"),
+})
+
 export function LoginForm() {
+  const { login } = useAuth();
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -38,7 +45,16 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
-    // TODO: Implement login logic
+    try {
+      console.log("Login values:", values); const data = await apiRequest("/users/login", loginResponseSchema, {
+        method: "POST",
+        body: JSON.stringify(values),
+      });
+      console.log("Login response:", data);
+      login(data.access_token);
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
   }
 
   return (
