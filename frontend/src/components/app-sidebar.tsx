@@ -13,6 +13,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Home, List, Settings, Calendar, LogOut } from "lucide-react";
+import { useAuth } from "@/context/auth-context";
 
 const sidebar_items = [
   {
@@ -40,6 +41,7 @@ const sidebar_items = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const { logout } = useAuth();
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
@@ -73,7 +75,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenuButton asChild>
-          <a href="/logout">
+          <a href="#" onClick={logout}>
             <LogOut />
             Logout
           </a>

@@ -50,16 +50,21 @@ export function SignupForm() {
     defaultValues: {
       email: "",
       password: "",
+      confirm_password: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof signupSchema>) {
     try {
       console.log("Register values:", values);
-      const data = await apiRequest("/users/register", signupResponseSchema, {
-        method: "POST",
-        body: JSON.stringify(values),
-      });
+      const data = await apiRequest(
+        "/users/registration",
+        signupResponseSchema,
+        {
+          method: "POST",
+          body: JSON.stringify(values),
+        }
+      );
       console.log("Login response:", data);
       login(data.access_token);
     } catch (error) {
