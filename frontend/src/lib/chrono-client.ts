@@ -7,12 +7,23 @@ export async function apiRequest<T>(
   schema: z.ZodSchema<T>,
   options: RequestInit = {}
 ): Promise<T> {
+  const isFormData = options.body instanceof FormData;
+
+  const headers: Record<string, string> = {
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  const token = localStorage.getItem("chrono_token");
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  if (!isFormData && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    headers,
   });
 
   const json = await response.json();
