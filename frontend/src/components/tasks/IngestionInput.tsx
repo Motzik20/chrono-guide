@@ -55,7 +55,15 @@ const taskDraft = z.object({
 
 const taskDrafts = z.array(taskDraft);
 
-export default function IngestionInput() {
+export type TaskDraft = z.infer<typeof taskDraft>;
+
+interface IngestionInputProps {
+  onDraftsReceived: (drafts: TaskDraft[]) => void;
+}
+
+export default function IngestionInput({
+  onDraftsReceived,
+}: IngestionInputProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"file" | "text">("file");
   async function onFileSubmit(values: z.infer<typeof fileSchema>) {
@@ -72,6 +80,7 @@ export default function IngestionInput() {
         }
       );
       console.log("File ingestion response:", response);
+      onDraftsReceived(response);
     } catch (error) {
       console.error("File ingestion failed:", error);
     } finally {
@@ -93,6 +102,7 @@ export default function IngestionInput() {
         }
       );
       console.log("Text ingestion response:", response);
+      onDraftsReceived(response);
     } catch (error) {
       console.error("Text ingestion failed:", error);
     } finally {
