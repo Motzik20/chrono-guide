@@ -31,7 +31,7 @@ export async function apiRequest<T>(
   if (!response.ok) {
     throw new Error(json.detail || "API error");
   }
-
+  console.log("API response:", json);
   const result = schema.safeParse(json);
 
   if (!result.success) {

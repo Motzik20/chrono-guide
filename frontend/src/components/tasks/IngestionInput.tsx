@@ -9,6 +9,13 @@ import {
   FormField,
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { apiRequest } from "@/lib/chrono-client";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -41,17 +48,15 @@ const textSchema = z.object({
 const taskDraft = z.object({
   title: z.string(),
   description: z.string(),
-  expected_duration_minutes: z.number().min(1).max(480),
-  tips: z.array(z.string()).min(2).max(4),
+  expected_duration_minutes: z.number().min(1),
+  tips: z.array(z.string()),
 });
 
 const taskDrafts = z.array(taskDraft);
 
 export default function IngestionInput() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"file" | "text">("file");
-  const fileInputRef = useRef<HTMLInputElement>(null);
   async function onFileSubmit(values: z.infer<typeof fileSchema>) {
     setIsLoading(true);
     try {
@@ -68,24 +73,87 @@ export default function IngestionInput() {
       console.log("File ingestion response:", response);
     } catch (error) {
       console.error("File ingestion failed:", error);
+    } finally {
+      setIsLoading(false);
     }
   }
-  function onTextSubmit(values: z.infer<typeof textSchema>) {
-    console.log(values);
+
+  async function onTextSubmit(values: z.infer<typeof textSchema>) {
+    setIsLoading(true);
+    try {
+      const body = JSON.stringify(values);
+      console.log("Text ingestion body:", body);
+      const response: z.infer<typeof taskDrafts> = await apiRequest(
+        "/tasks/ingest/text",
+        taskDrafts,
+        {
+          method: "POST",
+          body: body,
+        }
+      );
+      console.log("Text ingestion response:", response);
+    } catch (error) {
+      console.error("Text ingestion failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }
-  const handleBrowseFiles = () => {
-    fileInputRef.current?.click();
-  };
+
+  return (
+    <Card className="mx-auto max-w-2xl w-full">
+      <CardHeader className="space-y-1 text-center">
+        <CardTitle className="text-2xl font-bold tracking-tight">
+          Create Tasks
+        </CardTitle>
+        <CardDescription>
+          Upload a file or paste text to extract tasks automatically
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as "file" | "text")}
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="file">
+              <Upload className="mr-2 w-4 h-4" />
+              Upload File
+            </TabsTrigger>
+            <TabsTrigger value="text">
+              <FileText className="mr-2 w-4 h-4" />
+              Enter Text
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="file" className="mt-4">
+            <FileInput onSubmit={onFileSubmit} isLoading={isLoading} />
+          </TabsContent>
+          <TabsContent value="text" className="mt-4">
+            <TextInput onSubmit={onTextSubmit} isLoading={isLoading} />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FileInput({
+  onSubmit,
+  isLoading,
+}: {
+  onSubmit: (values: z.infer<typeof fileSchema>) => void;
+  isLoading: boolean;
+}) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const fileForm = useForm<z.infer<typeof fileSchema>>({
     resolver: zodResolver(fileSchema),
   });
 
-  const textForm = useForm<z.infer<typeof textSchema>>({
-    resolver: zodResolver(textSchema),
-    defaultValues: {
-      text: "",
-    },
-  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleBrowseFiles = () => {
+    fileInputRef.current?.click();
+  };
 
   const handleFileChange = (file: File | null) => {
     setSelectedFile(file);
@@ -106,135 +174,129 @@ export default function IngestionInput() {
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
-
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={(v) => setActiveTab(v as "file" | "text")}
-    >
-      <TabsList>
-        <TabsTrigger value="file">
-          <Upload className="mr-2 w-4 h-4" />
-          Upload File
-        </TabsTrigger>
-        <TabsTrigger value="text">
-          <FileText className="mr-2 w-4 h-4" />
-          Enter Text
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="file" className="mt-4">
-        <Form {...fileForm}>
-          <form
-            onSubmit={fileForm.handleSubmit(onFileSubmit)}
-            className="space-y-4"
-          >
-            <FormField
-              control={fileForm.control}
-              name="file"
-              render={({ field: { value, onChange, ...fieldProps } }) => (
-                <FormItem>
-                  <FormLabel>Ingestion Input</FormLabel>
-                  <FormControl>
-                    <div
-                      onDrop={handleDrop}
-                      onDragOver={handleDragOver}
-                      onClick={handleBrowseFiles}
-                      className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
-                    >
-                      {selectedFile ? (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-5 w-5" />
-                            <span className="text-sm">{selectedFile.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ({(selectedFile.size / 1024).toFixed(1)} KB)
-                            </span>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              handleFileChange(null);
-                              fileForm.reset();
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div>
-                          <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                          <p className="text-sm text-muted-foreground mb-2">
-                            Drag and drop a file here, or click to browse
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Supported: JPEG, PNG, PDF (max 10MB)
-                          </p>
-                        </div>
-                      )}
-                      <Input
-                        {...fieldProps}
-                        ref={fileInputRef}
-                        type="file"
-                        accept={ACCEPTED_FILE_TYPES.join(",")}
-                        className="hidden"
-                        id="file-input"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileChange(file);
+    <Form {...fileForm}>
+      <form onSubmit={fileForm.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={fileForm.control}
+          name="file"
+          render={({ field: { value, onChange, ...fieldProps } }) => (
+            <FormItem>
+              <FormLabel>Ingestion Input</FormLabel>
+              <FormControl>
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onClick={handleBrowseFiles}
+                  className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer min-h-[250px] min-w-[350px] flex flex-col items-center justify-center"
+                >
+                  {selectedFile ? (
+                    <div className="flex flex-col items-center justify-center">
+                      <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          Selected File:
+                        </p>
+                        <p className="text-sm">{selectedFile.name}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-4"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFileChange(null);
+                          fileForm.reset();
                         }}
-                      />
-                      <label htmlFor="file-input" className="cursor-pointer">
-                        {!selectedFile && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="mt-4"
-                          >
-                            Browse Files
-                          </Button>
-                        )}
-                      </label>
+                      >
+                        <X className="h-4 w-4" /> Clear Selection
+                      </Button>
                     </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={!selectedFile}>
-              Submit
-            </Button>
-          </form>
-        </Form>
-      </TabsContent>
-      <TabsContent value="text" className="mt-4">
-        <Form {...textForm}>
-          <form
-            onSubmit={textForm.handleSubmit(onTextSubmit)}
-            className="space-y-4"
-          >
-            <FormField
-              control={textForm.control}
-              name="text"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ingestion Input</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      placeholder="Enter your text here..."
-                      className="min-h-[200px]"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={!textForm.formState.isValid}>
-              Submit
-            </Button>
-          </form>
-        </Form>
-      </TabsContent>
-    </Tabs>
+                  ) : (
+                    <div>
+                      <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Drag and drop a file here, or click to browse
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Supported: JPEG, PNG, PDF (max 10MB)
+                      </p>
+                    </div>
+                  )}
+                  <Input
+                    {...fieldProps}
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ACCEPTED_FILE_TYPES.join(",")}
+                    className="hidden"
+                    id="file-input"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileChange(file);
+                    }}
+                  />
+                  <label htmlFor="file-input" className="cursor-pointer">
+                    {!selectedFile && (
+                      <Button type="button" variant="outline" className="mt-4">
+                        Browse Files
+                      </Button>
+                    )}
+                  </label>
+                </div>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <Button type="submit" disabled={!selectedFile || isLoading}>
+          {isLoading ? "Analyzing..." : "Analyze File"}
+        </Button>
+      </form>
+    </Form>
+  );
+}
+
+function TextInput({
+  onSubmit,
+  isLoading,
+}: {
+  onSubmit: (values: z.infer<typeof textSchema>) => void;
+  isLoading: boolean;
+}) {
+  const textForm = useForm<z.infer<typeof textSchema>>({
+    resolver: zodResolver(textSchema),
+    defaultValues: {
+      text: "",
+    },
+  });
+  return (
+    <Form {...textForm}>
+      <form onSubmit={textForm.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={textForm.control}
+          name="text"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Ingestion Input</FormLabel>
+              <FormControl>
+                <div className="border-2 rounded-lg text-center hover:border-primary transition-colors min-h-[250px] w-[350px] items-center justify-center">
+                  <Textarea
+                    {...field}
+                    placeholder="Enter your text here..."
+                    className="min-h-[200px] w-full h-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none overflow-y-auto break-words whitespace-pre-wrap"
+                  />
+                </div>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <Button
+          type="submit"
+          disabled={!textForm.formState.isValid || isLoading}
+        >
+          {isLoading ? "Analyzing..." : "Analyze Text"}
+        </Button>
+      </form>
+    </Form>
   );
 }
