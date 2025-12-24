@@ -22,7 +22,7 @@ export default function RootLayout({
           {!isAuthPage && (
             <SidebarProvider>
               <AppSidebar />
-              <main>{children}</main>
+              <main className="w-full h-screen">{children}</main>
             </SidebarProvider>
           )}
           {isAuthPage && <>{children}</>}

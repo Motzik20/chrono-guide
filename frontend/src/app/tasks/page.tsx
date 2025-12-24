@@ -1,11 +1,7 @@
 "use client";
 
-import IngestionInput from "@/components/tasks/IngestionInput";
+import TasksSplitView from "@/components/tasks/TasksSplitView";
 
 export default function TasksPage() {
-  return (
-    <div>
-      <IngestionInput />
-    </div>
-  );
+  return <TasksSplitView />;
 }

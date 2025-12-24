@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FileText, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -100,7 +101,7 @@ export default function IngestionInput() {
   }
 
   return (
-    <Card className="mx-auto max-w-2xl w-full">
+    <Card className="mx-auto max-w-2xl">
       <CardHeader className="space-y-1 text-center">
         <CardTitle className="text-2xl font-bold tracking-tight">
           Create Tasks
@@ -176,13 +177,16 @@ function FileInput({
   };
   return (
     <Form {...fileForm}>
-      <form onSubmit={fileForm.handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        onSubmit={fileForm.handleSubmit(onSubmit)}
+        className="space-y-4 flex flex-col items-center justify-center"
+      >
         <FormField
           control={fileForm.control}
           name="file"
           render={({ field: { value, onChange, ...fieldProps } }) => (
             <FormItem>
-              <FormLabel>Ingestion Input</FormLabel>
+              <FormLabel>Input File</FormLabel>
               <FormControl>
                 <div
                   onDrop={handleDrop}
@@ -247,8 +251,19 @@ function FileInput({
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={!selectedFile || isLoading}>
-          {isLoading ? "Analyzing..." : "Analyze File"}
+
+        <Button
+          type="submit"
+          disabled={!selectedFile || isLoading}
+          className="w-1/2 mx-auto"
+        >
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <Spinner /> Analyzing...
+            </div>
+          ) : (
+            "Analyze Text"
+          )}
         </Button>
       </form>
     </Form>
@@ -270,13 +285,16 @@ function TextInput({
   });
   return (
     <Form {...textForm}>
-      <form onSubmit={textForm.handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        onSubmit={textForm.handleSubmit(onSubmit)}
+        className="space-y-4 flex flex-col items-center justify-center"
+      >
         <FormField
           control={textForm.control}
           name="text"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Ingestion Input</FormLabel>
+              <FormLabel>Input Text</FormLabel>
               <FormControl>
                 <div className="border-2 rounded-lg text-center hover:border-primary transition-colors min-h-[250px] w-[350px] items-center justify-center">
                   <Textarea
@@ -293,8 +311,15 @@ function TextInput({
         <Button
           type="submit"
           disabled={!textForm.formState.isValid || isLoading}
+          className="w-1/2 mx-auto"
         >
-          {isLoading ? "Analyzing..." : "Analyze Text"}
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <Spinner /> Analyzing...
+            </div>
+          ) : (
+            "Analyze Text"
+          )}
         </Button>
       </form>
     </Form>
