@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FileText, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { useTaskDrafts } from "@/context/task-drafts-context";
 
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -52,20 +53,15 @@ const taskDraft = z.object({
   expected_duration_minutes: z.number().min(1),
   tips: z.array(z.string()),
   priority: z.number().min(0).max(4).optional(),
-  deadline: z.string().datetime().optional().nullable(),
+  deadline: z.iso.datetime().optional().nullable(),
 });
 
 const taskDrafts = z.array(taskDraft);
 
 export type TaskDraft = z.infer<typeof taskDraft>;
 
-interface IngestionInputProps {
-  onDraftsReceived: (drafts: TaskDraft[]) => void;
-}
-
-export default function IngestionInput({
-  onDraftsReceived,
-}: IngestionInputProps) {
+export default function IngestionInput() {
+  const { addDrafts } = useTaskDrafts();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"file" | "text">("file");
   async function onFileSubmit(values: z.infer<typeof fileSchema>) {
@@ -82,7 +78,7 @@ export default function IngestionInput({
         }
       );
       console.log("File ingestion response:", response);
-      onDraftsReceived(response);
+      addDrafts(response);
     } catch (error) {
       console.error("File ingestion failed:", error);
     } finally {
@@ -104,7 +100,7 @@ export default function IngestionInput({
         }
       );
       console.log("Text ingestion response:", response);
-      onDraftsReceived(response);
+      addDrafts(response);
     } catch (error) {
       console.error("Text ingestion failed:", error);
     } finally {

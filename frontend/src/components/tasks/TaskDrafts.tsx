@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardHeader,
@@ -39,13 +40,56 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import type { TaskDraft } from "./IngestionInput";
+import { useTaskDrafts } from "@/context/task-drafts-context";
 
 interface TaskDraftsProps {
   drafts: TaskDraft[];
   onDraftUpdate: (index: number, draft: TaskDraft) => void;
 }
 
-export default function TaskDrafts({ drafts, onDraftUpdate }: TaskDraftsProps) {
+export default function TaskDrafts() {
+  const { drafts, deleteDrafts } = useTaskDrafts();
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+    new Set()
+  );
+
+  const allSelected =
+    drafts.length > 0 && selectedIndices.size === drafts.length;
+  const someSelected =
+    drafts.length > 0 &&
+    selectedIndices.size > 0 &&
+    selectedIndices.size < drafts.length;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIndices(new Set(drafts.map((_, index) => index)));
+      console.log("Selected all tasks:", selectedIndices);
+    } else {
+      setSelectedIndices(new Set());
+      console.log("Unselected all tasks:", selectedIndices);
+    }
+  };
+
+  const handleDraftSelect = (index: number, checked: boolean) => {
+    setSelectedIndices((prev) => {
+      const newSet = new Set(selectedIndices);
+      if (checked) {
+        newSet.add(index);
+      } else {
+        newSet.delete(index);
+      }
+      return newSet;
+    });
+  };
+
+  const saveSelectedTasks = () => {};
+
+  const deleteSelectedTasks = () => {
+    console.log("Deleting selected tasks:", selectedIndices);
+    deleteDrafts(selectedIndices);
+    setSelectedIndices(new Set());
+  };
+
   if (drafts.length === 0) {
     return (
       <Card className="mx-auto w-1/2 max-w-2xl">
@@ -65,11 +109,17 @@ export default function TaskDrafts({ drafts, onDraftUpdate }: TaskDraftsProps) {
     <div className="mx-auto max-w-2xl w-full space-y-4">
       <Card>
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight">
-            Task Drafts
+          <CardTitle className="flex justify-between">
+            <p className="text-2xl font-bold tracking-tight">Task Drafts</p>
+            <p className="text-sm text-muted-foreground">Select all</p>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="flex justify-between">
             {drafts.length} {drafts.length === 1 ? "draft" : "drafts"} found
+            <Checkbox
+              checked={allSelected}
+              onCheckedChange={handleSelectAll}
+              className="h-6 w-6 border border-slate-500"
+            />
           </CardDescription>
         </CardHeader>
       </Card>
@@ -77,22 +127,39 @@ export default function TaskDrafts({ drafts, onDraftUpdate }: TaskDraftsProps) {
         {drafts.map((draft, index) => (
           <TaskDraft
             key={index}
+            index={index}
             draft={draft}
-            onUpdate={(updatedDraft) => onDraftUpdate(index, updatedDraft)}
+            isSelected={selectedIndices.has(index)}
+            onSelect={handleDraftSelect}
           />
         ))}
       </div>
-      <Button>Save Tasks</Button>
+      <div className="flex justify-end gap-2">
+        <Button className="flex-1" onClick={() => saveSelectedTasks()}>
+          Save Selected Tasks
+        </Button>
+        <Button
+          variant="destructive"
+          className="flex-1"
+          onClick={() => deleteSelectedTasks()}
+        >
+          Delete Selected Tasks
+        </Button>
+      </div>
     </div>
   );
 }
 
 export function TaskDraft({
   draft,
-  onUpdate,
+  index,
+  isSelected,
+  onSelect,
 }: {
   draft: TaskDraft;
-  onUpdate: (draft: TaskDraft) => void;
+  index: number;
+  isSelected: boolean;
+  onSelect: (index: number, checked: boolean) => void;
 }) {
   const [priority, setPriority] = useState<string>(
     draft.priority?.toString() ?? "2"
@@ -110,7 +177,7 @@ export function TaskDraft({
     return "10:30";
   });
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-
+  const { updateDrafts } = useTaskDrafts();
   const priorityLabels: Record<string, string> = {
     "0": "Highest (0)",
     "1": "High (1)",
@@ -121,7 +188,7 @@ export function TaskDraft({
 
   const handlePriorityChange = (value: string) => {
     setPriority(value);
-    onUpdate({
+    updateDrafts(new Set([index]), {
       ...draft,
       priority: parseInt(value, 10),
     });
@@ -133,12 +200,12 @@ export function TaskDraft({
       const [hours, minutes] = time.split(":");
       const deadline = new Date(selectedDate);
       deadline.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-      onUpdate({
+      updateDrafts(new Set([index]), {
         ...draft,
         deadline: deadline.toISOString(),
       });
     } else {
-      onUpdate({
+      updateDrafts(new Set([index]), {
         ...draft,
         deadline: null,
       });
@@ -152,7 +219,7 @@ export function TaskDraft({
       const [hours, minutes] = newTime.split(":");
       const deadline = new Date(date);
       deadline.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-      onUpdate({
+      updateDrafts(new Set([index]), {
         ...draft,
         deadline: deadline.toISOString(),
       });
@@ -162,7 +229,14 @@ export function TaskDraft({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{draft.title}</CardTitle>
+        <CardTitle className="text-lg flex justify-between">
+          {draft.title}{" "}
+          <Checkbox
+            checked={isSelected}
+            className="h-6 w-6 border border-slate-500"
+            onCheckedChange={(checked) => onSelect(index, checked === true)}
+          />
+        </CardTitle>
         <CardDescription className="whitespace-pre-wrap">
           {draft.description}
         </CardDescription>
@@ -272,26 +346,26 @@ export function TaskDraft({
             </div>
           </div>
         </div>
-        <Collapsible>
-          {draft.tips && draft.tips.length > 0 && (
+        {draft.tips && draft.tips.length > 0 && (
+          <Collapsible>
             <div className="space-y-2">
-              <CollapsibleTrigger asChild>
+              <CollapsibleTrigger asChild className="w-20">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Lightbulb className="h-4 w-4" />
                   <span>Tips</span>
                   <ChevronsUpDown className="h-4 w-4" />
                 </div>
               </CollapsibleTrigger>
-              <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-6">
-                {draft.tips.map((tip, tipIndex) => (
-                  <CollapsibleContent key={tipIndex}>
+              <CollapsibleContent>
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-6">
+                  {draft.tips.map((tip, tipIndex) => (
                     <li key={tipIndex}>{tip}</li>
-                  </CollapsibleContent>
-                ))}
-              </ul>
+                  ))}
+                </ul>
+              </CollapsibleContent>
             </div>
-          )}
-        </Collapsible>
+          </Collapsible>
+        )}
       </CardContent>
     </Card>
   );
