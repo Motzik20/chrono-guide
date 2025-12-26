@@ -9,31 +9,9 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import {
-  Clock,
-  Lightbulb,
-  ChevronDownIcon,
-  X,
-  ChevronsUpDown,
-} from "lucide-react";
+import { Clock, Lightbulb, ChevronsUpDown, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Collapsible,
   CollapsibleContent,
@@ -41,11 +19,7 @@ import {
 } from "@/components/ui/collapsible";
 import type { TaskDraft } from "./IngestionInput";
 import { useTaskDrafts } from "@/context/task-drafts-context";
-
-interface TaskDraftsProps {
-  drafts: TaskDraft[];
-  onDraftUpdate: (index: number, draft: TaskDraft) => void;
-}
+import { EditDialog } from "./EditDialog";
 
 export default function TaskDrafts() {
   const { drafts, deleteDrafts } = useTaskDrafts();
@@ -145,6 +119,18 @@ export default function TaskDrafts() {
         >
           Delete Selected Tasks
         </Button>
+        <EditDialog
+          selectedIndices={selectedIndices}
+          trigger={
+            <Button
+              variant="outline"
+              className="flex-1"
+              disabled={selectedIndices.size === 0}
+            >
+              Edit Selected ({selectedIndices.size})
+            </Button>
+          }
+        />
       </div>
     </div>
   );
@@ -161,23 +147,6 @@ export function TaskDraft({
   isSelected: boolean;
   onSelect: (index: number, checked: boolean) => void;
 }) {
-  const [priority, setPriority] = useState<string>(
-    draft.priority?.toString() ?? "2"
-  );
-  const [date, setDate] = useState<Date | undefined>(
-    draft.deadline ? new Date(draft.deadline) : undefined
-  );
-  const [time, setTime] = useState<string>(() => {
-    if (draft.deadline) {
-      const deadlineDate = new Date(draft.deadline);
-      const hours = deadlineDate.getHours().toString().padStart(2, "0");
-      const minutes = deadlineDate.getMinutes().toString().padStart(2, "0");
-      return `${hours}:${minutes}`;
-    }
-    return "10:30";
-  });
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const { updateDrafts } = useTaskDrafts();
   const priorityLabels: Record<string, string> = {
     "0": "Highest (0)",
     "1": "High (1)",
@@ -186,60 +155,39 @@ export function TaskDraft({
     "4": "Lowest (4)",
   };
 
-  const handlePriorityChange = (value: string) => {
-    setPriority(value);
-    updateDrafts(new Set([index]), {
-      ...draft,
-      priority: parseInt(value, 10),
-    });
-  };
-
-  const handleDateChange = (selectedDate: Date | undefined) => {
-    setDate(selectedDate);
-    if (selectedDate) {
-      const [hours, minutes] = time.split(":");
-      const deadline = new Date(selectedDate);
-      deadline.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-      updateDrafts(new Set([index]), {
-        ...draft,
-        deadline: deadline.toISOString(),
-      });
-    } else {
-      updateDrafts(new Set([index]), {
-        ...draft,
-        deadline: null,
-      });
-    }
-    setDatePickerOpen(false);
-  };
-
-  const handleTimeChange = (newTime: string) => {
-    setTime(newTime);
-    if (date) {
-      const [hours, minutes] = newTime.split(":");
-      const deadline = new Date(date);
-      deadline.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-      updateDrafts(new Set([index]), {
-        ...draft,
-        deadline: deadline.toISOString(),
-      });
-    }
+  const formatDeadline = () => {
+    if (!draft.deadline) return "Not set";
+    const deadlineDate = new Date(draft.deadline);
+    return deadlineDate.toLocaleString();
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg flex justify-between">
-          {draft.title}{" "}
-          <Checkbox
-            checked={isSelected}
-            className="h-6 w-6 border border-slate-500"
-            onCheckedChange={(checked) => onSelect(index, checked === true)}
-          />
-        </CardTitle>
-        <CardDescription className="whitespace-pre-wrap">
-          {draft.description}
-        </CardDescription>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1">
+            <CardTitle className="text-lg">{draft.title}</CardTitle>
+            <CardDescription className="whitespace-pre-wrap mt-1">
+              {draft.description}
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <EditDialog
+              selectedIndices={new Set([index])}
+              isSingleEdit={true}
+              trigger={
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              }
+            />
+            <Checkbox
+              checked={isSelected}
+              className="h-6 w-6 border border-slate-500"
+              onCheckedChange={(checked) => onSelect(index, checked === true)}
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -252,97 +200,16 @@ export function TaskDraft({
 
         <div className="space-y-3">
           <div className="flex flex-col gap-2">
-            <Label htmlFor={`priority-${draft.title}`}>Priority *</Label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  id={`priority-${draft.title}`}
-                  className="w-full justify-between"
-                >
-                  {priorityLabels[priority]}
-                  <ChevronDownIcon className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56">
-                <DropdownMenuLabel>Task Priority</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuRadioGroup
-                  value={priority}
-                  onValueChange={handlePriorityChange}
-                >
-                  <DropdownMenuRadioItem value="0">
-                    Highest (0)
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="1">
-                    High (1)
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="2">
-                    Medium (2)
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="3">
-                    Low (3)
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="4">
-                    Lowest (4)
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Label>Priority</Label>
+            <div className="text-sm font-medium">
+              {priorityLabels[(draft.priority ?? 2).toString()]}
+            </div>
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex flex-col gap-3 flex-1">
-              <Label htmlFor={`date-picker-${draft.title}`}>
-                Deadline Date
-              </Label>
-              <div className="flex gap-2">
-                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      id={`date-picker-${draft.title}`}
-                      className="flex-1 justify-between font-normal"
-                    >
-                      {date ? date.toLocaleDateString() : "Select date"}
-                      <ChevronDownIcon className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto overflow-hidden p-0"
-                    align="start"
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      captionLayout="dropdown"
-                      onSelect={handleDateChange}
-                    />
-                  </PopoverContent>
-                </Popover>
-                {date && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleDateChange(undefined)}
-                    className="shrink-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-col gap-3 flex-1">
-              <Label htmlFor={`time-picker-${draft.title}`}>Time</Label>
-              <Input
-                type="time"
-                id={`time-picker-${draft.title}`}
-                step="60"
-                value={time}
-                onChange={(e) => handleTimeChange(e.target.value)}
-                disabled={!date}
-                className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
-              />
+          <div className="flex flex-col gap-2">
+            <Label>Deadline</Label>
+            <div className="text-sm text-muted-foreground">
+              {formatDeadline()}
             </div>
           </div>
         </div>

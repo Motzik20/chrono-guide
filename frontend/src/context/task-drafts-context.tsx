@@ -32,7 +32,12 @@ export function TaskDraftsProvider({
 
   const addDrafts: (newDrafts: TaskDraft[]) => void = useCallback(
     (newDrafts: TaskDraft[]) => {
-      setDrafts((prev) => [...prev, ...newDrafts]);
+      // Ensure all drafts have default priority of 2 if not set
+      const draftsWithDefaults = newDrafts.map((draft) => ({
+        ...draft,
+        priority: draft.priority ?? 2,
+      }));
+      setDrafts((prev) => [...prev, ...draftsWithDefaults]);
     },
     []
   );
