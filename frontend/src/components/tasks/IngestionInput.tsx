@@ -51,6 +51,8 @@ const taskDraft = z.object({
   description: z.string(),
   expected_duration_minutes: z.number().min(1),
   tips: z.array(z.string()),
+  priority: z.number().min(0).max(4).optional(),
+  deadline: z.string().datetime().optional().nullable(),
 });
 
 const taskDrafts = z.array(taskDraft);
