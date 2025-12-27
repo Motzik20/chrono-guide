@@ -85,3 +85,13 @@ class FileAnalysisRequest(BaseModel):
 
 class TextAnalysisRequest(BaseModel):
     text: str
+
+
+class TasksCreateResponse(BaseModel):
+    task_ids: list[int]
+    created_count: int
+
+
+class TaskCreateResponse(BaseModel):
+    task_id: int
+    created: bool

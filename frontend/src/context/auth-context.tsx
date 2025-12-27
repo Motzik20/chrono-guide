@@ -24,7 +24,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (token) {
       if (isTokenExpired(token)) {
         logout();
-        return;
       }
       setToken(token);
     }

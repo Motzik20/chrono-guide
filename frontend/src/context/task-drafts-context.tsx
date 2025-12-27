@@ -17,6 +17,7 @@ interface TaskDraftsContextType {
     update: Partial<TaskDraft>
   ) => void;
   deleteDrafts: (selectedIndices: Set<number>) => void;
+  clearDrafts: () => void;
 }
 
 const TaskDraftsContext = createContext<TaskDraftsContextType | undefined>(
@@ -75,6 +76,10 @@ export function TaskDraftsProvider({
     []
   );
 
+  const clearDrafts: () => void = useCallback(() => {
+    setDrafts([]);
+  }, []);
+
   return (
     <TaskDraftsContext.Provider
       value={{
@@ -82,6 +87,7 @@ export function TaskDraftsProvider({
         addDrafts,
         updateDrafts,
         deleteDrafts,
+        clearDrafts,
       }}
     >
       {children}

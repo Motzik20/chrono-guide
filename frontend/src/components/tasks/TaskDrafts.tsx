@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { z } from "zod";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
@@ -12,10 +13,16 @@ import { Button } from "@/components/ui/button";
 import { useTaskDrafts } from "@/context/task-drafts-context";
 import { EditDialog } from "./EditDialog";
 import { TaskCard } from "./TaskCard";
-import { apiRequest } from "@/lib/chrono-client";
+import { apiRequest, ApiError } from "@/lib/chrono-client";
+import { toast } from "sonner";
+
+const tasksCreateSchema = z.object({
+  task_ids: z.array(z.number()),
+  created_count: z.number(),
+});
 
 export default function TaskDrafts() {
-  const { drafts, deleteDrafts } = useTaskDrafts();
+  const { drafts, deleteDrafts, clearDrafts } = useTaskDrafts();
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
     new Set()
   );
@@ -50,7 +57,47 @@ export default function TaskDrafts() {
   };
 
   async function saveAllTasks() {
-    // TODO: Implement save all tasks
+    try {
+      const response = await apiRequest("/tasks/bulk", tasksCreateSchema, {
+        method: "POST",
+        body: JSON.stringify(drafts),
+      });
+      const { task_ids, created_count } = response;
+
+      if (created_count === 0) {
+        toast.error("Failed to save tasks", {
+          description: "No tasks were saved. Please try again.",
+        });
+        return;
+      }
+
+      if (created_count !== drafts.length) {
+        const failedCount = drafts.length - created_count;
+        toast.warning("Failed to save tasks", {
+          description: `${failedCount} tasks were not saved. ${created_count} tasks saved.`,
+        });
+        clearDrafts();
+        return;
+      }
+
+      clearDrafts();
+      toast.success(
+        created_count === 1
+          ? "Task saved successfully"
+          : `${created_count} tasks saved successfully`
+      );
+    } catch (error: unknown) {
+      if (error instanceof ApiError) {
+        toast.error("Failed to save tasks", {
+          description: error.message || "An error occurred while saving tasks.",
+        });
+      } else {
+        toast.error("Failed to save tasks", {
+          description:
+            "An unexpected error occurred while saving tasks. Please try again.",
+        });
+      }
+    }
   }
 
   const deleteSelectedTasks = () => {
