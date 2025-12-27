@@ -1,5 +1,10 @@
 from logging.config import fileConfig
 import os
+import sys
+from pathlib import Path
+
+backend_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(backend_dir))
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -7,7 +12,9 @@ from sqlmodel import SQLModel
 
 from alembic import context
 
+
 from app.models import *
+
 
 config = context.config
 
