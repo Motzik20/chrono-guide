@@ -16,6 +16,7 @@ def create_task(task: TaskCreate, user_id: int, session: Session) -> Task:
     session.refresh(task_model)
     return task_model
 
+
 def create_tasks(tasks: list[TaskCreate], user_id: int, session: Session) -> list[Task]:
     task_models: list[Task] = []
     for task in tasks:
@@ -28,11 +29,14 @@ def create_tasks(tasks: list[TaskCreate], user_id: int, session: Session) -> lis
         session.refresh(task_model)
     return task_models
 
+
 def get_tasks(task_ids: list[int], user_id: int, session: Session) -> list[Task]:
     if not task_ids:
         return []
-    return list(session.exec(
-        select(Task)
-        .where(Task.id.in_(task_ids))  # type: ignore[union-attr]
-        .where(Task.user_id == user_id)
-    ).all())
+    return list(
+        session.exec(
+            select(Task)
+            .where(Task.id.in_(task_ids))  # type: ignore[union-attr]
+            .where(Task.user_id == user_id)
+        ).all()
+    )

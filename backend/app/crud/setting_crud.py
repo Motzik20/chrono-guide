@@ -1,5 +1,6 @@
 from sqlmodel import Session, select
 
+from app.core.exceptions import NotFoundError
 from app.models.user_setting import UserSetting
 from app.schemas.user import UserSettingOut, UserSettingsOut, UserSettingUpdate
 
@@ -27,13 +28,12 @@ def update_user_setting(
     )
     setting_model = session.exec(statement).first()
     if setting_model is None:
-        raise ValueError(f"Setting with key {setting.key} not found")
+        raise NotFoundError(f"Setting with key {setting.key} not found")
     setting_model.value = setting.value
     session.add(setting_model)
     session.flush()
     session.refresh(setting_model)
-    if setting_model.id is None:
-        raise ValueError(f"Setting with key {setting.key} has no ID after flush")
+    assert setting_model.id is not None
     return UserSettingOut(
         id=setting_model.id, key=setting_model.key, value=setting_model.value
     )
