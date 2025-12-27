@@ -2,6 +2,8 @@ import datetime as dt
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.core.default_settings import DEFAULT_USER_SETTINGS
+
 
 class UserBase(BaseModel):
     @field_validator("email", check_fields=False)
@@ -23,6 +25,7 @@ class UserUpdate(UserBase):
     email: str | None = Field(default=None, min_length=1, max_length=255)
     password: str | None = Field(default=None, min_length=1, max_length=128)
 
+
 class UserOut(BaseModel):
     id: int
     email: str
@@ -36,3 +39,25 @@ class UserOut(BaseModel):
 class UserLogin(BaseModel):
     email: str = Field(min_length=1)
     password: str = Field(min_length=1)
+
+
+class UserSettingOut(BaseModel):
+    id: int
+    key: str
+    value: str
+
+
+class UserSettingsOut(BaseModel):
+    settings: list[UserSettingOut]
+
+
+class UserSettingUpdate(BaseModel):
+    key: str
+    value: str
+
+    @field_validator("key")
+    @classmethod
+    def validate_key(cls, v: str) -> str:
+        if v not in DEFAULT_USER_SETTINGS.keys():
+            raise ValueError(f"Invalid key: {v}")
+        return v
