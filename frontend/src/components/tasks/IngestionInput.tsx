@@ -26,6 +26,7 @@ import { FileText, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useTaskDrafts } from "@/context/task-drafts-context";
+import { TaskDraft } from "@/lib/task-types";
 
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -58,18 +59,17 @@ const taskDraft = z.object({
 
 const taskDrafts = z.array(taskDraft);
 
-export type TaskDraft = z.infer<typeof taskDraft>;
-
 export default function IngestionInput() {
   const { addDrafts } = useTaskDrafts();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"file" | "text">("file");
+
   async function onFileSubmit(values: z.infer<typeof fileSchema>) {
     setIsLoading(true);
     try {
       const formData = new FormData();
       formData.append("file", values.file);
-      const response: z.infer<typeof taskDrafts> = await apiRequest(
+      const response: TaskDraft[] = await apiRequest(
         "/tasks/ingest/file",
         taskDrafts,
         {
@@ -91,7 +91,7 @@ export default function IngestionInput() {
     try {
       const body = JSON.stringify(values);
       console.log("Text ingestion body:", body);
-      const response: z.infer<typeof taskDrafts> = await apiRequest(
+      const response: TaskDraft[] = await apiRequest(
         "/tasks/ingest/text",
         taskDrafts,
         {

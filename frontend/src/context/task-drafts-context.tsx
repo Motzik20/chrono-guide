@@ -7,7 +7,7 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
-import type { TaskDraft } from "@/components/tasks/IngestionInput";
+import type { TaskDraft } from "@/lib/task-types";
 
 interface TaskDraftsContextType {
   drafts: TaskDraft[];

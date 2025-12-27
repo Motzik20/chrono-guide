@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/popover";
 import { ChevronDownIcon, X } from "lucide-react";
 import { useTaskDrafts } from "@/context/task-drafts-context";
-import type { TaskDraft } from "./IngestionInput";
+import type { TaskDraft } from "@/lib/task-types";
 
 interface EditDialogProps {
   selectedIndices: Set<number>;

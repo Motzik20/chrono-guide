@@ -1,6 +1,6 @@
 "use client";
 
-import IngestionInput, { type TaskDraft } from "./IngestionInput";
+import IngestionInput from "./IngestionInput";
 import { Separator } from "@/components/ui/separator";
 import TaskDrafts from "./TaskDrafts";
 
