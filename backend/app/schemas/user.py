@@ -45,6 +45,9 @@ class UserSettingOut(BaseModel):
     id: int
     key: str
     value: str
+    type: str
+    description: str
+    option_type: str | None = None
 
 
 class UserSettingsOut(BaseModel):

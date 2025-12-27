@@ -307,3 +307,54 @@ class TestUpdateSettings:
 
         # Should return 422 for invalid key type
         assert response.status_code == 422
+
+
+class TestGetOptions:
+    """Tests for GET /settings/options/{key} endpoint."""
+
+    def test_get_timezone_options_success(
+        self, client: TestClient, mock_user_id: int
+    ) -> None:
+        """Test getting options for a valid key."""
+        import pytz
+
+        response = client.get("/settings/options/timezone")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) > 0
+        for option in data:
+            assert option["value"] in pytz.common_timezones
+            assert option["label"] == option["value"].replace("/", " ")
+
+    def test_get_language_options_success(
+        self, client: TestClient, mock_user_id: int
+    ) -> None:
+        """Test getting options for a valid key."""
+        from app.core.default_settings import METADATA_SETTINGS
+
+        language_options = METADATA_SETTINGS["language"]["options"]
+        assert language_options is not None
+        assert isinstance(language_options, list)
+        assert len(language_options) > 0
+        response = client.get("/settings/options/language")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) > 0
+        for option in data:
+            assert option["value"] in [o["value"] for o in language_options]
+            assert option["label"] in [o["label"] for o in language_options]
+
+    def test_get_options_invalid_key(
+        self, client: TestClient, mock_user_id: int
+    ) -> None:
+        """Test getting options for an invalid key."""
+        response = client.get("/settings/options/invalid_key")
+        assert response.status_code == 404
+
+    def test_get_options_with_no_options(
+        self, client: TestClient, mock_user_id: int
+    ) -> None:
+        """Test getting options for a setting with no options."""
+        response = client.get("/settings/options/allow_task_splitting")
+        assert response.status_code == 200
+        assert response.json() is None

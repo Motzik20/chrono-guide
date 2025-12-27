@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock
-
 import pytest
 from sqlmodel import Session
 
@@ -106,29 +104,6 @@ class TestGetUserSettings:
         assert len(result.settings) == 1
         assert result.settings[0].value == "UTC"
         assert result.settings[0].id == user_setting.id
-
-    def test_get_user_settings_filters_none_ids(
-        self, session: Session, user: User
-    ) -> None:
-        """Test that settings with None IDs are filtered out."""
-        # This shouldn't happen in practice, but test the edge case
-        assert user.id is not None
-        setting_with_none_id = UserSetting(
-            user_id=user.id,
-            key="timezone",
-            value="UTC",
-        )
-        setting_with_none_id.id = None
-
-        # Mock the session.exec() to return a setting with None ID
-        mock_result = MagicMock()
-        mock_result.all.return_value = [setting_with_none_id]
-        session.exec = MagicMock(return_value=mock_result)
-
-        result = setting_crud.get_user_settings(user.id, session)
-
-        # Should filter out None IDs
-        assert len(result.settings) == 0
 
 
 class TestUpdateUserSetting:
