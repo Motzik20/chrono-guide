@@ -71,11 +71,27 @@ class TaskExtracted(BaseModel):
 
 class TaskDraft(BaseModel):
     """Result from AI analysis of an file or text- extracted task information"""
+
     title: str
     description: str
     expected_duration_minutes: int
     tips: list[str] = Field(default_factory=list)
 
+
 class FileAnalysisRequest(BaseModel):
     file_content: bytes
     content_type: str
+
+
+class TextAnalysisRequest(BaseModel):
+    text: str
+
+
+class TasksCreateResponse(BaseModel):
+    task_ids: list[int]
+    created_count: int
+
+
+class TaskCreateResponse(BaseModel):
+    task_id: int
+    created: bool

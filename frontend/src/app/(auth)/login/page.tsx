@@ -4,6 +4,7 @@ import { useAuth } from "@/context/auth-context";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function LoginPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -11,13 +12,18 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      router.push("/");
+      router.replace("/");
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (isAuthenticated || isLoading) {
-    return null; // or a loading spinner while redirecting
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Spinner />
+      </div>
+    );
   }
+  if (isAuthenticated) return null;
 
   return <LoginForm />;
 }

@@ -24,7 +24,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (token) {
       if (isTokenExpired(token)) {
         logout();
-        return;
       }
       setToken(token);
     }
@@ -42,6 +41,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     router.push("/login");
   };
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => {
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
+    };
+  }, [logout]);
 
   return (
     <AuthContext.Provider

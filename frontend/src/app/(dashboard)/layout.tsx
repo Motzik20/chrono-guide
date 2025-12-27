@@ -1,10 +1,18 @@
 "use client";
 
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { Toaster } from "@/components/ui/sonner";
+
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export default function Home() {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
@@ -17,11 +25,11 @@ export default function Home() {
   if (!isAuthenticated || isLoading) {
     return null; // or a loading spinner while redirecting
   }
-
   return (
-    <main>
-      <h1>Chrono Guide</h1>
-      <p>Welcome to Chrono Guide</p>
-    </main>
+    <SidebarProvider>
+      <AppSidebar />
+      <main className="w-full h-screen">{children}</main>
+      <Toaster position="top-center" />
+    </SidebarProvider>
   );
 }

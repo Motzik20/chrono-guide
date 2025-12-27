@@ -2,14 +2,18 @@ from unittest.mock import AsyncMock
 
 from fastapi.testclient import TestClient
 
-from app.schemas.task import TaskDraft
+from app.schemas.task import TaskDraft, TextAnalysisRequest
 
 
 class TestIngestFile:
     """Tests for POST /tasks/ingest/file endpoint."""
 
     def test_ingest_file_success(
-        self, client: TestClient, mock_task_drafts: list[TaskDraft], mock_chrono_agent: AsyncMock, mock_user_id: int
+        self,
+        client: TestClient,
+        mock_task_drafts: list[TaskDraft],
+        mock_chrono_agent: AsyncMock,
+        mock_user_id: int,
     ) -> None:
         """Test successful file ingestion."""
         file_content = b"fake image content"
@@ -24,7 +28,9 @@ class TestIngestFile:
         assert data[1]["title"] == "Test Task 2"
         mock_chrono_agent.analyze_tasks_from_file.assert_awaited_once()
 
-    def test_ingest_file_invalid_content_type(self, client: TestClient, mock_chrono_agent: AsyncMock, mock_user_id: int) -> None:
+    def test_ingest_file_invalid_content_type(
+        self, client: TestClient, mock_chrono_agent: AsyncMock, mock_user_id: int
+    ) -> None:
         """Test file ingestion fails with invalid content type."""
         file_content = b"fake content"
         files = {"file": ("test.txt", file_content, "text/plain")}
@@ -36,7 +42,11 @@ class TestIngestFile:
         mock_chrono_agent.analyze_tasks_from_file.assert_not_called()
 
     def test_ingest_file_png_success(
-        self, client: TestClient, mock_task_drafts: list[TaskDraft], mock_chrono_agent: AsyncMock, mock_user_id: int
+        self,
+        client: TestClient,
+        mock_task_drafts: list[TaskDraft],
+        mock_chrono_agent: AsyncMock,
+        mock_user_id: int,
     ) -> None:
         """Test successful PNG file ingestion."""
         file_content = b"fake png content"
@@ -48,7 +58,11 @@ class TestIngestFile:
         assert len(response.json()) == 2
 
     def test_ingest_file_pdf_success(
-        self, client: TestClient, mock_task_drafts: list[TaskDraft], mock_chrono_agent: AsyncMock, mock_user_id: int
+        self,
+        client: TestClient,
+        mock_task_drafts: list[TaskDraft],
+        mock_chrono_agent: AsyncMock,
+        mock_user_id: int,
     ) -> None:
         """Test successful PDF file ingestion."""
         file_content = b"fake pdf content"
@@ -64,27 +78,38 @@ class TestIngestText:
     """Tests for POST /tasks/ingest/text endpoint."""
 
     def test_ingest_text_success(
-        self, client: TestClient, mock_task_drafts: list[TaskDraft], mock_chrono_agent: AsyncMock, mock_user_id: int
+        self,
+        client: TestClient,
+        mock_task_drafts: list[TaskDraft],
+        mock_chrono_agent: AsyncMock,
+        mock_user_id: int,
     ) -> None:
         """Test successful text ingestion."""
-
-        response = client.post("/tasks/ingest/text", json="This is a test task description")
+        text_request = TextAnalysisRequest(text="This is a test task description")
+        response = client.post("/tasks/ingest/text", json=text_request.model_dump())
 
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2
         assert data[0]["title"] == "Test Task 1"
-        mock_chrono_agent.analyze_tasks_from_text.assert_awaited_once_with("This is a test task description")
+        mock_chrono_agent.analyze_tasks_from_text.assert_awaited_once_with(
+            "This is a test task description"
+        )
 
-    def test_ingest_text_empty_result(self, client: TestClient, mock_chrono_agent: AsyncMock, mock_user_id: int) -> None:
+    def test_ingest_text_empty_result(
+        self, client: TestClient, mock_chrono_agent: AsyncMock, mock_user_id: int
+    ) -> None:
         """Test text ingestion returns empty list when no tasks found."""
 
         mock_chrono_agent.analyze_tasks_from_text = AsyncMock(return_value=[])
-        response = client.post("/tasks/ingest/text", json="No tasks here")
+        text_request = TextAnalysisRequest(text="No tasks here")
+        response = client.post("/tasks/ingest/text", json=text_request.model_dump())
 
         assert response.status_code == 200
         assert response.json() == []
-        mock_chrono_agent.analyze_tasks_from_text.assert_awaited_once_with("No tasks here")
+        mock_chrono_agent.analyze_tasks_from_text.assert_awaited_once_with(
+            "No tasks here"
+        )
 
 
 class TestCreateTask:
@@ -105,15 +130,13 @@ class TestCreateTask:
             json=task_data,
         )
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["title"] == "New Task"
-        assert data["description"] == "Task description"
-        assert data["expected_duration_minutes"] == 45
-        assert data["priority"] == 2
-        assert data["user_id"] == mock_user_id
+        assert response.status_code == 201
+        assert response.json()["task_id"] is not None
+        assert response.json()["created"] is True
 
-    def test_create_task_with_deadline(self, client: TestClient, mock_user_id: int) -> None:
+    def test_create_task_with_deadline(
+        self, client: TestClient, mock_user_id: int
+    ) -> None:
         """Test task creation with deadline."""
         import datetime as dt
 
@@ -130,10 +153,13 @@ class TestCreateTask:
             json=task_data,
         )
 
-        assert response.status_code == 200
-        assert response.json()["deadline"] is not None
+        assert response.status_code == 201
+        assert response.json()["task_id"] is not None
+        assert response.json()["created"] is True
 
-    def test_create_task_invalid_duration(self, client: TestClient, mock_user_id: int) -> None:
+    def test_create_task_invalid_duration(
+        self, client: TestClient, mock_user_id: int
+    ) -> None:
         """Test task creation fails with invalid duration."""
         task_data = {
             "title": "Task",
@@ -148,7 +174,9 @@ class TestCreateTask:
 
         assert response.status_code == 422
 
-    def test_create_task_invalid_priority(self, client: TestClient, mock_user_id: int) -> None:
+    def test_create_task_invalid_priority(
+        self, client: TestClient, mock_user_id: int
+    ) -> None:
         """Test task creation fails with invalid priority."""
         task_data = {
             "title": "Task",
@@ -164,25 +192,13 @@ class TestCreateTask:
 
         assert response.status_code == 422
 
-    def test_create_task_default_user_id(self, client: TestClient, mock_user_id: int) -> None:
-        """Test task creation uses default user_id when header not provided."""
-        task_data = {
-            "title": "Task",
-            "description": "Description",
-            "expected_duration_minutes": 30,
-        }
-
-        response = client.post("/tasks/", json=task_data)
-
-        assert response.status_code == 200
-        # Default user_id is 1 (from get_current_user_id default)
-        assert response.json()["user_id"] == mock_user_id
-
 
 class TestCreateTasksBulk:
     """Tests for POST /tasks/bulk endpoint."""
 
-    def test_create_tasks_bulk_success(self, client: TestClient, mock_user_id: int) -> None:
+    def test_create_tasks_bulk_success(
+        self, client: TestClient, mock_user_id: int
+    ) -> None:
         """Test successful bulk task creation."""
         tasks_data = [
             {
@@ -202,24 +218,28 @@ class TestCreateTasksBulk:
             json=tasks_data,
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
-        assert len(data) == 2
-        assert data[0]["title"] == "Task 1"
-        assert data[1]["title"] == "Task 2"
-        assert all(task["user_id"] == mock_user_id for task in data)
+        assert data["created_count"] == 2
+        assert data["task_ids"][0] is not None
+        assert data["task_ids"][1] is not None
 
-    def test_create_tasks_bulk_empty_list(self, client: TestClient, mock_user_id: int) -> None:
+    def test_create_tasks_bulk_empty_list(
+        self, client: TestClient, mock_user_id: int
+    ) -> None:
         """Test bulk creation with empty list."""
         response = client.post(
             "/tasks/bulk",
             json=[],
         )
 
-        assert response.status_code == 200
-        assert response.json() == []
+        assert response.status_code == 201
+        assert response.json()["created_count"] == 0
+        assert response.json()["task_ids"] == []
 
-    def test_create_tasks_bulk_partial_invalid(self, client: TestClient, mock_user_id: int) -> None:
+    def test_create_tasks_bulk_partial_invalid(
+        self, client: TestClient, mock_user_id: int
+    ) -> None:
         """Test bulk creation fails when one task is invalid."""
         tasks_data = [
             {
@@ -240,4 +260,3 @@ class TestCreateTasksBulk:
         )
 
         assert response.status_code == 422
-
