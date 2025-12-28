@@ -51,12 +51,12 @@ export function SettingRow({ setting, onSettingUpdated }: SettingRowProps) {
 
   // Update setting value
   const handleUpdate = useCallback(
-    async (value: string) => {
+    async (value: string, label: string | null) => {
       setIsUpdating(true);
       try {
         const updated = await apiRequest(`/settings/`, SettingSchema, {
           method: "PATCH",
-          body: JSON.stringify({ key: setting.key, value }),
+          body: JSON.stringify({ key: setting.key, value, label }),
         });
         onSettingUpdated(updated);
         toast.success("Setting updated");
@@ -95,7 +95,7 @@ export function SettingRow({ setting, onSettingUpdated }: SettingRowProps) {
               setting={setting}
               options={options}
               onUpdate={handleUpdate}
-              disabled={isUpdating || isLoadingOptions}
+              disabled={isUpdating}
             />
           </div>
         );

@@ -8,10 +8,10 @@ class SettingMetadata(TypedDict):
     options: list[dict[str, str]] | str | None
 
 
-DEFAULT_USER_SETTINGS: dict[str, str] = {
-    "timezone": "UTC",
-    "language": "en",
-    "allow_task_splitting": "true",
+DEFAULT_USER_SETTINGS: dict[str, dict[str, str]] = {
+    "timezone": {"value": "UTC", "label": "UTC"},
+    "language": {"value": "en", "label": "English"},
+    "allow_task_splitting": {"value": "true", "label": "True"},
 }
 
 METADATA_SETTINGS: dict[str, SettingMetadata] = {

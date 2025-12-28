@@ -27,6 +27,7 @@ def get_user_settings(user_id: int, session: Session) -> UserSettingsOut:
                 id=setting.id,
                 key=setting.key,
                 value=setting.value,
+                label=setting.label,
                 type=type_value,
                 description=description_value,
                 option_type=option_type_value,
@@ -54,6 +55,7 @@ def update_user_setting(
     if setting_model is None:
         raise NotFoundError(f"Setting with key {setting.key} not found")
     setting_model.value = setting.value
+    setting_model.label = setting.label
     session.add(setting_model)
     session.flush()
     session.refresh(setting_model)
@@ -71,6 +73,7 @@ def update_user_setting(
         id=setting_model.id,
         key=setting_model.key,
         value=setting_model.value,
+        label=setting_model.label,
         type=type_value,
         description=description_value,
         option_type=option_type_value,

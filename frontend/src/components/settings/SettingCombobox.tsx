@@ -22,7 +22,7 @@ import type { Setting, Option } from "@/lib/settings-types";
 interface SettingComboboxProps {
   setting: Setting;
   options: Option[];
-  onUpdate: (value: string) => void;
+  onUpdate: (value: string, label: string | null) => void;
   disabled?: boolean;
   isLoading?: boolean;
 }
@@ -48,11 +48,7 @@ export function SettingCombobox({
           className="w-[280px] justify-between"
           disabled={disabled || isLoading}
         >
-          {isLoading
-            ? "Loading..."
-            : selectedOption
-              ? selectedOption.label
-              : setting.value || "Select option..."}
+          {isLoading ? "Loading..." : setting.label}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -67,7 +63,7 @@ export function SettingCombobox({
                   key={option.value}
                   value={option.label}
                   onSelect={() => {
-                    onUpdate(option.value);
+                    onUpdate(option.value, option.label);
                     setOpen(false);
                   }}
                 >

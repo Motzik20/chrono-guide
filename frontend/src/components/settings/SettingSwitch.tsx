@@ -5,7 +5,7 @@ import type { Setting } from "@/lib/settings-types";
 
 interface SettingSwitchProps {
   setting: Setting;
-  onUpdate: (value: string) => void;
+  onUpdate: (value: string, label: string | null) => void;
   disabled?: boolean;
 }
 
@@ -19,7 +19,7 @@ export function SettingSwitch({
   return (
     <Switch
       checked={isChecked}
-      onCheckedChange={(checked) => onUpdate(checked ? "true" : "false")}
+      onCheckedChange={(checked) => onUpdate(checked ? "true" : "false", null)}
       disabled={disabled}
     />
   );

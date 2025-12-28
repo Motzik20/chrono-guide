@@ -5,6 +5,7 @@ export const SettingSchema = z.object({
   id: z.number(),
   key: z.string(),
   value: z.string(),
+  label: z.string().nullable(),
   type: z.string(),
   description: z.string(),
   option_type: z.string().nullable(),
@@ -35,6 +36,7 @@ export type OptionsResponse = z.infer<typeof OptionsResponseSchema>;
 export const SettingUpdateSchema = z.object({
   key: z.string(),
   value: z.string(),
+  label: z.string().nullable(),
 });
 
 export type SettingUpdate = z.infer<typeof SettingUpdateSchema>;
