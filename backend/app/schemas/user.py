@@ -1,4 +1,5 @@
 import datetime as dt
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -42,9 +43,9 @@ class UserLogin(BaseModel):
 
 
 class UserSettingOut(BaseModel):
-    id: int
+    id: int | None = None
     key: str
-    value: str
+    value: Any
     label: str | None = None
     type: str
     description: str
@@ -57,7 +58,7 @@ class UserSettingsOut(BaseModel):
 
 class UserSettingUpdate(BaseModel):
     key: str
-    value: str
+    value: Any
     label: str | None = None
 
     @field_validator("key")

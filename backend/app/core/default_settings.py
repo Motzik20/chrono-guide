@@ -40,4 +40,10 @@ METADATA_SETTINGS: dict[str, SettingMetadata] = {
         "option_type": None,
         "options": None,
     },
+    "availability": {
+        "type": "schedule",
+        "description": "The availability of the user",
+        "option_type": None,
+        "options": None,
+    },
 }

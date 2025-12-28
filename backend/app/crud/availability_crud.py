@@ -1,9 +1,53 @@
+import datetime as dt
+
 from sqlmodel import Session, select
 
-from app.models.availability import WeeklyAvailability
+from app.models.availability import DailyWindowModel, WeeklyAvailability
+from app.schemas.availability import DayOfWeek, WeeklyAvailabilityUpdate
 
 
 def get_user_availability(user_id: int, session: Session) -> WeeklyAvailability:
     return session.exec(
         select(WeeklyAvailability).where(WeeklyAvailability.user_id == user_id)
     ).one()
+
+
+def create_user_availability(user_id: int, session: Session) -> WeeklyAvailability:
+    availability = WeeklyAvailability(user_id=user_id)
+    session.add(availability)
+    session.refresh(availability)
+    assert availability.id is not None
+    for day_of_week in DayOfWeek:
+        session.add(
+            DailyWindowModel(
+                weekly_availability_id=availability.id,
+                day_of_week=day_of_week,
+                start_time=dt.time(7, 0),
+                end_time=dt.time(17, 0),
+            )
+        )
+    session.flush()
+    session.refresh(availability)
+    return availability
+
+
+def update_user_availability(
+    user_id: int, availability: WeeklyAvailabilityUpdate, session: Session
+) -> WeeklyAvailability:
+    db_availability: WeeklyAvailability = get_user_availability(user_id, session)
+    assert db_availability.id is not None
+    for window in db_availability.windows:
+        session.delete(window)
+    for day_of_week, windows in availability.windows.items():
+        for window in windows:
+            session.add(
+                DailyWindowModel(
+                    weekly_availability_id=db_availability.id,
+                    day_of_week=DayOfWeek(day_of_week),
+                    start_time=window.start,
+                    end_time=window.end,
+                )
+            )
+    session.commit()
+    session.refresh(db_availability)
+    return db_availability

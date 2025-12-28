@@ -2,7 +2,9 @@ from sqlmodel import Session, select
 
 from app.core.default_settings import METADATA_SETTINGS
 from app.core.exceptions import NotFoundError
+from app.crud.availability_crud import get_user_availability
 from app.models.user_setting import UserSetting
+from app.schemas.availability import WeeklyAvailabilityRead
 from app.schemas.user import UserSettingOut, UserSettingsOut, UserSettingUpdate
 
 
@@ -33,7 +35,31 @@ def get_user_settings(user_id: int, session: Session) -> UserSettingsOut:
                 option_type=option_type_value,
             )
         )
+
+    user_settings.append(get_availability_setting(user_id, session))
     return UserSettingsOut(settings=user_settings)
+
+
+def get_availability_setting(user_id: int, session: Session) -> UserSettingOut:
+    availability = get_user_availability(user_id, session)
+    av_schema = WeeklyAvailabilityRead.model_validate(availability)
+    metadata = METADATA_SETTINGS.get("availability")
+    if not metadata:
+        raise NotFoundError("No metadata found for setting key: availability")
+
+    type_value = metadata.get("type", "string")
+    description_value = metadata.get("description", "")
+    option_type_value = metadata.get("option_type", None)
+
+    return UserSettingOut(
+        id=None,
+        key="availability",
+        value=av_schema,
+        label="Availability",
+        type=type_value,
+        description=description_value,
+        option_type=option_type_value,
+    )
 
 
 def update_user_settings(
