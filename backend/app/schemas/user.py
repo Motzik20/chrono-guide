@@ -45,6 +45,10 @@ class UserSettingOut(BaseModel):
     id: int
     key: str
     value: str
+    label: str | None = None
+    type: str
+    description: str
+    option_type: str | None = None
 
 
 class UserSettingsOut(BaseModel):
@@ -54,6 +58,7 @@ class UserSettingsOut(BaseModel):
 class UserSettingUpdate(BaseModel):
     key: str
     value: str
+    label: str | None = None
 
     @field_validator("key")
     @classmethod

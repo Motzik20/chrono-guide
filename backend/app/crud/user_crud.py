@@ -21,8 +21,12 @@ def create_user(user: UserCreate, session: Session) -> User:
         raise HTTPException(
             status_code=500, detail="User ID is None in user_create crud after flush"
         )
-    for key, value in DEFAULT_USER_SETTINGS.items():
-        user_setting = UserSetting(user_id=user_model.id, key=key, value=value)
+    for key, values_dict in DEFAULT_USER_SETTINGS.items():
+        value = values_dict["value"]
+        label = values_dict["label"]
+        user_setting = UserSetting(
+            user_id=user_model.id, key=key, value=value, label=label
+        )
         session.add(user_setting)
     session.flush()
     return user_model

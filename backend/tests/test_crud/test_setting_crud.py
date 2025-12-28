@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock
-
 import pytest
 from sqlmodel import Session
 
@@ -30,6 +28,7 @@ class TestGetUserSettings:
             user_id=user.id,
             key="timezone",
             value="America/New_York",
+            label="New York",
         )
         session.add(setting)
         session.commit()
@@ -41,6 +40,7 @@ class TestGetUserSettings:
         assert len(result.settings) == 1
         assert result.settings[0].key == "timezone"
         assert result.settings[0].value == "America/New_York"
+        assert result.settings[0].label == "New York"
         assert result.settings[0].id == setting.id
 
     def test_get_user_settings_multiple_settings(
@@ -53,11 +53,13 @@ class TestGetUserSettings:
                 user_id=user.id,
                 key="timezone",
                 value="America/New_York",
+                label="New York",
             ),
             UserSetting(
                 user_id=user.id,
                 key="language",
                 value="en",
+                label="English",
             ),
         ]
         for setting in settings:
@@ -89,11 +91,13 @@ class TestGetUserSettings:
             user_id=user.id,
             key="timezone",
             value="UTC",
+            label="UTC",
         )
         other_setting = UserSetting(
             user_id=other_user.id,
             key="timezone",
             value="America/Los_Angeles",
+            label="Los Angeles",
         )
         session.add(user_setting)
         session.add(other_setting)
@@ -105,30 +109,28 @@ class TestGetUserSettings:
 
         assert len(result.settings) == 1
         assert result.settings[0].value == "UTC"
+        assert result.settings[0].label == "UTC"
         assert result.settings[0].id == user_setting.id
 
-    def test_get_user_settings_filters_none_ids(
+    def test_get_user_settings_with_null_label(
         self, session: Session, user: User
     ) -> None:
-        """Test that settings with None IDs are filtered out."""
-        # This shouldn't happen in practice, but test the edge case
+        """Test getting settings when label is null."""
         assert user.id is not None
-        setting_with_none_id = UserSetting(
+        setting = UserSetting(
             user_id=user.id,
             key="timezone",
             value="UTC",
+            label=None,
         )
-        setting_with_none_id.id = None
-
-        # Mock the session.exec() to return a setting with None ID
-        mock_result = MagicMock()
-        mock_result.all.return_value = [setting_with_none_id]
-        session.exec = MagicMock(return_value=mock_result)
+        session.add(setting)
+        session.commit()
+        session.refresh(setting)
 
         result = setting_crud.get_user_settings(user.id, session)
 
-        # Should filter out None IDs
-        assert len(result.settings) == 0
+        assert len(result.settings) == 1
+        assert result.settings[0].label is None
 
 
 class TestUpdateUserSetting:
@@ -141,12 +143,15 @@ class TestUpdateUserSetting:
             user_id=user.id,
             key="timezone",
             value="UTC",
+            label="UTC",
         )
         session.add(setting)
         session.commit()
         session.refresh(setting)
 
-        update = UserSettingUpdate(key="timezone", value="America/New_York")
+        update = UserSettingUpdate(
+            key="timezone", value="America/New_York", label="New York"
+        )
         assert user.id is not None
         result = setting_crud.update_user_setting(
             user.id,
@@ -157,15 +162,17 @@ class TestUpdateUserSetting:
         assert isinstance(result, UserSettingOut)
         assert result.key == "timezone"
         assert result.value == "America/New_York"
+        assert result.label == "New York"
         assert result.id == setting.id
 
         # Verify the database was updated
         session.refresh(setting)
         assert setting.value == "America/New_York"
+        assert setting.label == "New York"
 
     def test_update_user_setting_not_found(self, session: Session, user: User) -> None:
         """Test updating a setting that doesn't exist raises NotFoundError."""
-        update = UserSettingUpdate(key="timezone", value="UTC")
+        update = UserSettingUpdate(key="timezone", value="UTC", label="UTC")
         assert user.id is not None
         with pytest.raises(NotFoundError, match="Setting with key timezone not found"):
             setting_crud.update_user_setting(
@@ -188,13 +195,16 @@ class TestUpdateUserSetting:
             user_id=other_user.id,
             key="timezone",
             value="UTC",
+            label="UTC",
         )
         session.add(other_setting)
         session.commit()
         session.refresh(other_setting)
 
         # Try to update it as the first user
-        update = UserSettingUpdate(key="timezone", value="America/New_York")
+        update = UserSettingUpdate(
+            key="timezone", value="America/New_York", label="New York"
+        )
         assert user.id is not None
         with pytest.raises(NotFoundError, match="Setting with key timezone not found"):
             setting_crud.update_user_setting(
@@ -212,13 +222,16 @@ class TestUpdateUserSetting:
             user_id=user.id,
             key="timezone",
             value="UTC",
+            label="UTC",
         )
         session.add(setting)
         session.commit()
         session.refresh(setting)
 
         # First update
-        update1 = UserSettingUpdate(key="timezone", value="America/New_York")
+        update1 = UserSettingUpdate(
+            key="timezone", value="America/New_York", label="New York"
+        )
         assert user.id is not None
         result1 = setting_crud.update_user_setting(
             user.id,
@@ -226,9 +239,12 @@ class TestUpdateUserSetting:
             session,
         )
         assert result1.value == "America/New_York"
+        assert result1.label == "New York"
 
         # Second update
-        update2 = UserSettingUpdate(key="timezone", value="Europe/London")
+        update2 = UserSettingUpdate(
+            key="timezone", value="Europe/London", label="London"
+        )
         assert user.id is not None
         result2 = setting_crud.update_user_setting(
             user.id,
@@ -236,6 +252,7 @@ class TestUpdateUserSetting:
             session,
         )
         assert result2.value == "Europe/London"
+        assert result2.label == "London"
         assert result2.id == result1.id  # Same setting, same ID
 
     def test_update_user_setting_different_keys(
@@ -248,11 +265,13 @@ class TestUpdateUserSetting:
                 user_id=user.id,
                 key="timezone",
                 value="UTC",
+                label="UTC",
             ),
             UserSetting(
                 user_id=user.id,
                 key="language",
                 value="en",
+                label="English",
             ),
         ]
         for setting in settings:
@@ -262,7 +281,9 @@ class TestUpdateUserSetting:
             session.refresh(setting)
 
         # Update timezone
-        update1 = UserSettingUpdate(key="timezone", value="America/New_York")
+        update1 = UserSettingUpdate(
+            key="timezone", value="America/New_York", label="New York"
+        )
         assert user.id is not None
         result1 = setting_crud.update_user_setting(
             user.id,
@@ -271,9 +292,10 @@ class TestUpdateUserSetting:
         )
         assert result1.key == "timezone"
         assert result1.value == "America/New_York"
+        assert result1.label == "New York"
 
         # Update language
-        update2 = UserSettingUpdate(key="language", value="fr")
+        update2 = UserSettingUpdate(key="language", value="fr", label="French")
         assert user.id is not None
         result2 = setting_crud.update_user_setting(
             user.id,
@@ -282,6 +304,7 @@ class TestUpdateUserSetting:
         )
         assert result2.key == "language"
         assert result2.value == "fr"
+        assert result2.label == "French"
 
         # Verify both are updated
         all_settings = setting_crud.get_user_settings(
@@ -290,8 +313,11 @@ class TestUpdateUserSetting:
         )
         assert len(all_settings.settings) == 2
         values = {s.key: s.value for s in all_settings.settings}
+        labels = {s.key: s.label for s in all_settings.settings}
         assert values["timezone"] == "America/New_York"
         assert values["language"] == "fr"
+        assert labels["timezone"] == "New York"
+        assert labels["language"] == "French"
 
     def test_update_user_setting_empty_value(
         self, session: Session, user: User
@@ -302,12 +328,13 @@ class TestUpdateUserSetting:
             user_id=user.id,
             key="timezone",
             value="UTC",
+            label="UTC",
         )
         session.add(setting)
         session.commit()
         session.refresh(setting)
 
-        update = UserSettingUpdate(key="timezone", value="")
+        update = UserSettingUpdate(key="timezone", value="", label="")
         assert user.id is not None
         result = setting_crud.update_user_setting(
             user.id,
@@ -316,8 +343,10 @@ class TestUpdateUserSetting:
         )
 
         assert result.value == ""
+        assert result.label == ""
         session.refresh(setting)
         assert setting.value == ""
+        assert setting.label == ""
 
     def test_update_user_setting_id_after_flush(
         self, session: Session, user: User
@@ -328,12 +357,15 @@ class TestUpdateUserSetting:
             user_id=user.id,
             key="timezone",
             value="UTC",
+            label="UTC",
         )
         session.add(setting)
         session.commit()
         session.refresh(setting)
 
-        update = UserSettingUpdate(key="timezone", value="America/New_York")
+        update = UserSettingUpdate(
+            key="timezone", value="America/New_York", label="New York"
+        )
         assert user.id is not None
         result = setting_crud.update_user_setting(
             user.id,
@@ -343,3 +375,57 @@ class TestUpdateUserSetting:
 
         # Should have an ID (this tests the SystemError check in the function)
         assert result.id is not None
+
+    def test_update_user_setting_with_null_label(
+        self, session: Session, user: User
+    ) -> None:
+        """Test updating a setting with null label."""
+        assert user.id is not None
+        setting = UserSetting(
+            user_id=user.id,
+            key="timezone",
+            value="UTC",
+            label="UTC",
+        )
+        session.add(setting)
+        session.commit()
+        session.refresh(setting)
+
+        update = UserSettingUpdate(key="timezone", value="America/New_York", label=None)
+        result = setting_crud.update_user_setting(
+            user.id,
+            update,
+            session,
+        )
+
+        assert result.value == "America/New_York"
+        assert result.label is None
+        session.refresh(setting)
+        assert setting.label is None
+
+    def test_update_user_setting_only_label(self, session: Session, user: User) -> None:
+        """Test updating only the label while keeping the same value."""
+        assert user.id is not None
+        setting = UserSetting(
+            user_id=user.id,
+            key="timezone",
+            value="America/New_York",
+            label="New York",
+        )
+        session.add(setting)
+        session.commit()
+        session.refresh(setting)
+
+        update = UserSettingUpdate(
+            key="timezone", value="America/New_York", label="NYC"
+        )
+        result = setting_crud.update_user_setting(
+            user.id,
+            update,
+            session,
+        )
+
+        assert result.value == "America/New_York"
+        assert result.label == "NYC"
+        session.refresh(setting)
+        assert setting.label == "NYC"
