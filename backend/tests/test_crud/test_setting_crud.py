@@ -6,22 +6,12 @@ from app.crud import setting_crud
 from app.models.user import User
 from app.models.user_setting import UserSetting
 from app.schemas.user import (
-    StringSettingOut,
     StringSettingUpdate,
-    UserSettingsOut,
 )
 
 
 class TestGetUserSettings:
     """Tests for get_user_settings function."""
-
-    def test_get_user_settings_no_availability(
-        self, session: Session, user: User
-    ) -> None:
-        """Test getting settings for a user with no settings returns empty list."""
-        assert user.id is not None
-        with pytest.raises(NotFoundError, match="No availability found for user"):
-            setting_crud.get_user_settings(user.id, session)
 
     def test_get_user_settings_single_setting(
         self, session: Session, user: User, daily_windows: None
@@ -40,12 +30,13 @@ class TestGetUserSettings:
 
         result = setting_crud.get_user_settings(user.id, session)
 
-        assert isinstance(result, UserSettingsOut)
-        assert len(result.settings) == 2
-        assert result.settings[0].key == "timezone"
-        assert result.settings[0].value == "America/New_York"
-        assert result.settings[0].label == "New York"
-        assert result.settings[0].id == setting.id
+        assert isinstance(result, list)
+        assert all(isinstance(s, UserSetting) for s in result)
+        assert len(result) == 1
+        assert result[0].key == "timezone"
+        assert result[0].value == "America/New_York"
+        assert result[0].label == "New York"
+        assert result[0].id == setting.id
 
     def test_get_user_settings_multiple_settings(
         self, session: Session, user: User, daily_windows: None
@@ -74,10 +65,11 @@ class TestGetUserSettings:
 
         result = setting_crud.get_user_settings(user.id, session)
 
-        assert isinstance(result, UserSettingsOut)
-        assert len(result.settings) == 3
-        keys = {s.key for s in result.settings}
-        assert keys == {"timezone", "language", "availability"}
+        assert isinstance(result, list)
+        assert all(isinstance(s, UserSetting) for s in result)
+        assert len(result) == 2
+        keys = {s.key for s in result}
+        assert keys == {"timezone", "language"}
 
     def test_get_user_settings_only_returns_user_settings(
         self, session: Session, user: User, daily_windows: None
@@ -109,12 +101,12 @@ class TestGetUserSettings:
         session.refresh(user_setting)
         session.refresh(other_setting)
 
-        result = setting_crud.get_user_settings(user.id, session)
+        result: list[UserSetting] = setting_crud.get_user_settings(user.id, session)
 
-        assert len(result.settings) == 2
-        assert result.settings[0].value == "UTC"
-        assert result.settings[0].label == "UTC"
-        assert result.settings[0].id == user_setting.id
+        assert len(result) == 1
+        assert result[0].key == "timezone"
+        assert result[0].value == "UTC"
+        assert result[0].label == "UTC"
 
     def test_get_user_settings_with_null_label(
         self, session: Session, user: User, daily_windows: None
@@ -133,8 +125,10 @@ class TestGetUserSettings:
 
         result = setting_crud.get_user_settings(user.id, session)
 
-        assert len(result.settings) == 2
-        assert result.settings[0].label is None
+        assert isinstance(result, list)
+        assert all(isinstance(s, UserSetting) for s in result)
+        assert len(result) == 1
+        assert result[0].label is None
 
 
 class TestUpdateUserSetting:
@@ -163,11 +157,10 @@ class TestUpdateUserSetting:
             session,
         )
 
-        assert isinstance(result, StringSettingOut)
+        assert isinstance(result, UserSetting)
         assert result.key == "timezone"
         assert result.value == "America/New_York"
         assert result.label == "New York"
-        assert result.id == setting.id
 
         # Verify the database was updated
         session.refresh(setting)
@@ -315,9 +308,9 @@ class TestUpdateUserSetting:
             user.id,
             session,
         )
-        assert len(all_settings.settings) == 3
-        values = {s.key: s.value for s in all_settings.settings}
-        labels = {s.key: s.label for s in all_settings.settings}
+        assert len(all_settings) == 2
+        values = {s.key: s.value for s in all_settings}
+        labels = {s.key: s.label for s in all_settings}
         assert values["timezone"] == "America/New_York"
         assert values["language"] == "fr"
         assert labels["timezone"] == "New York"

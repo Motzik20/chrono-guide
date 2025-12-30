@@ -4,7 +4,13 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.core.timezone import ensure_utc, get_next_half_hour, get_next_weekday, now_utc
+from app.core.timezone import (
+    ensure_utc,
+    get_next_half_hour,
+    get_next_weekday,
+    now_utc,
+    parse_user_datetime,
+)
 from app.models.availability import WeeklyAvailability
 from app.models.schedule_item import ScheduleItem
 from app.models.task import Task
@@ -57,7 +63,9 @@ class AvailableSlots(BaseModel):
 
     def __init__(self, **data: Any):
         super().__init__(**data)
-        self.total_duration_minutes = int(sum(slot.duration_minutes for slot in self.slots))
+        self.total_duration_minutes = int(
+            sum(slot.duration_minutes for slot in self.slots)
+        )
 
     def add_slots(self, slots: list[TimeSlot]) -> None:
         self.slots.extend(slots)
@@ -85,13 +93,12 @@ class SchedulingRequest(BaseModel):
     scheduler_availability: SchedulerAvailability
     config: SchedulingConfig
     start_time: dt.datetime
+    user_timezone: str
 
 
 class SchedulingResponse(BaseModel):
     schedule_blocks: list[ScheduleBlock]
-    warnings: list[SchedulableTask] = Field(
-        default_factory=lambda: []
-    )
+    warnings: list[SchedulableTask] = Field(default_factory=lambda: [])
 
 
 def task_to_schedulable(task: Task) -> SchedulableTask:
@@ -139,6 +146,7 @@ def schedule_tasks(
     tasks: list[Task],
     schedule_items: list[ScheduleItem],
     availability: WeeklyAvailability,
+    timezone: str,
 ) -> SchedulingResponse:
     """
     Pure scheduling function that takes pre-fetched data and returns schedule blocks.
@@ -169,6 +177,7 @@ def schedule_tasks(
         scheduler_availability=scheduler_availability,
         config=SchedulingConfig(),
         start_time=start_time,
+        user_timezone=timezone,
     )
 
     return schedule(request)
@@ -189,7 +198,10 @@ def schedule(
         if request.start_time <= bi.start_time < week_end
     ]
     available_slots: AvailableSlots = get_available_time_slots(
-        week_busy, request.scheduler_availability, request.start_time
+        week_busy,
+        request.scheduler_availability,
+        request.start_time,
+        request.user_timezone,
     )
     for _ in range(1, request.config.max_scheduling_weeks):
         week_start = week_end
@@ -200,7 +212,7 @@ def schedule(
             if week_start <= bi.start_time < week_end
         ]
         week_slots = get_available_time_slots(
-            week_busy, request.scheduler_availability, week_start
+            week_busy, request.scheduler_availability, week_start, request.user_timezone
         )
         available_slots.merge_slots(week_slots)
 
@@ -217,6 +229,7 @@ def get_available_time_slots(
     busy_intervals: list[BusyInterval],
     availability: SchedulerAvailability,
     week_start: dt.datetime,
+    user_timezone: str,
 ) -> AvailableSlots:
     available_slots: AvailableSlots = AvailableSlots()
     start_weekday_int: int = week_start.date().weekday()
@@ -228,20 +241,18 @@ def get_available_time_slots(
         day_of_week_int: int = current_date.weekday()
         day_of_week: DayOfWeek = DayOfWeek(day_of_week_int)
 
-        if availability.windows is None or day_of_week not in availability.windows.keys():
+        if day_of_week not in availability.windows.keys():
             continue
 
         day_windows = availability.windows[day_of_week]
 
         for window in day_windows:
-            window_start_raw = ensure_utc(
-                dt.datetime.combine(current_date, window.start)
+            window_start_raw = parse_user_datetime(
+                dt.datetime.combine(current_date, window.start), user_timezone
             )
-            window_end_raw = ensure_utc(
-                dt.datetime.combine(current_date, window.end)
+            window_end_raw = parse_user_datetime(
+                dt.datetime.combine(current_date, window.end), user_timezone
             )
-            if window_start_raw is None or window_end_raw is None:
-                continue
             window_start: dt.datetime = window_start_raw
             window_end: dt.datetime = window_end_raw
 
