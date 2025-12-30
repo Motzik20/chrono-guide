@@ -7,10 +7,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Setting, Option } from "@/lib/settings-types";
+import type { StringSetting, Option } from "@/lib/settings-types";
 
 interface SettingSelectProps {
-  setting: Setting;
+  setting: StringSetting;
   options: Option[];
   onUpdate: (value: string, label: string | null) => void;
   disabled?: boolean;

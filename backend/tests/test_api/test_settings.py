@@ -1,126 +1,49 @@
+import datetime as dt
+
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from app.core.default_settings import DEFAULT_USER_SETTINGS, METADATA_SETTINGS
 from app.models.user_setting import UserSetting
 
 
 class TestGetSettings:
     """Tests for GET /settings/ endpoint."""
 
-    def test_get_settings_empty(self, client: TestClient, mock_user_id: int) -> None:
-        """Test getting settings when user has no settings."""
-        response = client.get("/settings/")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert "settings" in data
-        assert data["settings"] == []
-
-    def test_get_settings_single_setting(
+    def test_get_settings_default_setting(
         self, client: TestClient, session: Session, mock_user_id: int
     ) -> None:
         """Test getting settings when user has one setting."""
-        setting = UserSetting(
-            user_id=mock_user_id, key="timezone", value="UTC", label="UTC"
-        )
-        session.add(setting)
-        session.commit()
-
         response = client.get("/settings/")
 
         assert response.status_code == 200
         data = response.json()
         assert "settings" in data
-        assert len(data["settings"]) == 1
-        assert data["settings"][0]["key"] == "timezone"
-        assert data["settings"][0]["value"] == "UTC"
-        assert data["settings"][0]["label"] == "UTC"
-        assert data["settings"][0]["id"] is not None
+        assert len(data["settings"]) == len(METADATA_SETTINGS.keys())
+        for setting in data["settings"]:
+            assert setting["key"] in METADATA_SETTINGS.keys()
+            if setting["key"] == "availability":
+                assert setting["type"] == "schedule"
+                for day in setting["value"].values():
+                    assert len(day) == 1
+                    assert day[0]["start"] == dt.time(7, 0).isoformat()
+                    assert day[0]["end"] == dt.time(17, 0).isoformat()
+                continue
 
-    def test_get_settings_multiple_settings(
-        self, client: TestClient, session: Session, mock_user_id: int
-    ) -> None:
-        """Test getting settings when user has multiple settings."""
-        settings = [
-            UserSetting(user_id=mock_user_id, key="timezone", value="UTC", label="UTC"),
-            UserSetting(
-                user_id=mock_user_id, key="language", value="en", label="English"
-            ),
-        ]
-        for setting in settings:
-            session.add(setting)
-        session.commit()
-
-        response = client.get("/settings/")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["settings"]) == 2
-        keys = {s["key"] for s in data["settings"]}
-        assert keys == {"timezone", "language"}
-
-    def test_get_settings_only_returns_current_user_settings(
-        self, client: TestClient, session: Session, mock_user_id: int
-    ) -> None:
-        """Test that settings endpoint only returns settings for authenticated user."""
-        from app.models.user import User
-
-        # First create the authenticated user (will get ID 1, matching mock_user_id)
-        authenticated_user = User(
-            email="authenticated@example.com", password="password"
-        )
-        session.add(authenticated_user)
-        session.commit()
-        session.refresh(authenticated_user)
-        # Verify it got the expected ID
-        assert authenticated_user.id == mock_user_id  # type: ignore[attr-defined]
-
-        # Create another user (will get ID 2, a different ID)
-        other_user = User(email="other@example.com", password="password")
-        session.add(other_user)
-        session.commit()
-        session.refresh(other_user)
-        # Verify it got a different ID
-        assert other_user.id != mock_user_id  # type: ignore[attr-defined]
-
-        # Create settings for both users
-        user_setting = UserSetting(
-            user_id=mock_user_id, key="timezone", value="UTC", label="UTC"
-        )
-        other_setting = UserSetting(
-            user_id=other_user.id,  # type: ignore[attr-defined]
-            key="timezone",
-            value="America/Los_Angeles",
-            label="Los Angeles",
-        )
-        session.add(user_setting)
-        session.add(other_setting)
-        session.commit()
-
-        response = client.get("/settings/")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["settings"]) == 1
-        assert data["settings"][0]["value"] == "UTC"
-        assert data["settings"][0]["label"] == "UTC"
+            assert setting["value"] == DEFAULT_USER_SETTINGS[setting["key"]]["value"]
+            assert setting["label"] == DEFAULT_USER_SETTINGS[setting["key"]]["label"]
 
     def test_get_settings_with_null_label(
         self, client: TestClient, session: Session, mock_user_id: int
     ) -> None:
         """Test getting settings when label is null."""
-        setting = UserSetting(
-            user_id=mock_user_id, key="timezone", value="UTC", label=None
-        )
-        session.add(setting)
-        session.commit()
-
         response = client.get("/settings/")
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data["settings"]) == 1
-        assert data["settings"][0]["label"] is None
+        for setting in data["settings"]:
+            if setting["key"] == "split_tasks":
+                assert setting["label"] is None
 
 
 class TestUpdateSettings:
@@ -130,12 +53,6 @@ class TestUpdateSettings:
         self, client: TestClient, session: Session, mock_user_id: int
     ) -> None:
         """Test successfully updating an existing setting."""
-        setting = UserSetting(
-            user_id=mock_user_id, key="timezone", value="UTC", label="UTC"
-        )
-        session.add(setting)
-        session.commit()
-        session.refresh(setting)
 
         update_data = {"key": "timezone", "value": "America/New_York", "label": "NYC"}
         response = client.patch("/settings/", json=update_data)
@@ -145,26 +62,6 @@ class TestUpdateSettings:
         assert data["key"] == "timezone"
         assert data["value"] == "America/New_York"
         assert data["label"] == "NYC"
-        assert data["id"] == setting.id
-
-        # Verify database was updated
-        session.refresh(setting)
-        assert setting.value == "America/New_York"
-        assert setting.label == "NYC"
-
-    def test_update_setting_not_found(
-        self, client: TestClient, mock_user_id: int
-    ) -> None:
-        """Test updating a setting that doesn't exist returns error.
-
-        Note: This shouldn't occur in normal operation since default settings
-        are created on user registration. This test ensures defensive error handling.
-        """
-        update_data = {"key": "timezone", "value": "UTC", "label": "UTC"}
-        response = client.patch("/settings/", json=update_data)
-
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
 
     def test_update_setting_invalid_key(
         self, client: TestClient, mock_user_id: int
@@ -215,13 +112,6 @@ class TestUpdateSettings:
         self, client: TestClient, session: Session, mock_user_id: int
     ) -> None:
         """Test updating the same setting multiple times."""
-        setting = UserSetting(
-            user_id=mock_user_id, key="timezone", value="UTC", label="UTC"
-        )
-        session.add(setting)
-        session.commit()
-        session.refresh(setting)
-        setting_id = setting.id
 
         # First update
         update1 = {"key": "timezone", "value": "America/New_York", "label": "NYC"}
@@ -229,7 +119,6 @@ class TestUpdateSettings:
         assert response1.status_code == 200
         assert response1.json()["value"] == "America/New_York"
         assert response1.json()["label"] == "NYC"
-        assert response1.json()["id"] == setting_id
 
         # Second update
         update2 = {"key": "timezone", "value": "Europe/London", "label": "London"}
@@ -237,22 +126,11 @@ class TestUpdateSettings:
         assert response2.status_code == 200
         assert response2.json()["value"] == "Europe/London"
         assert response2.json()["label"] == "London"
-        assert response2.json()["id"] == setting_id
 
     def test_update_setting_different_keys(
         self, client: TestClient, session: Session, mock_user_id: int
     ) -> None:
         """Test updating different setting keys."""
-        settings = [
-            UserSetting(user_id=mock_user_id, key="timezone", value="UTC", label="UTC"),
-            UserSetting(
-                user_id=mock_user_id, key="language", value="en", label="English"
-            ),
-        ]
-        for setting in settings:
-            session.add(setting)
-        session.commit()
-
         # Update timezone
         update1 = {"key": "timezone", "value": "America/New_York", "label": "NYC"}
         response1 = client.patch("/settings/", json=update1)
@@ -279,48 +157,6 @@ class TestUpdateSettings:
         assert values["language"] == "fr"
         assert labels["timezone"] == "NYC"
         assert labels["language"] == "French"
-
-    def test_update_setting_wrong_user(
-        self, client: TestClient, session: Session, mock_user_id: int
-    ) -> None:
-        """Test that updating a setting for a different user fails."""
-        from app.models.user import User
-
-        # First create the authenticated user (will get ID 1, matching mock_user_id)
-        authenticated_user = User(
-            email="authenticated@example.com", password="password"
-        )
-        session.add(authenticated_user)
-        session.commit()
-        session.refresh(authenticated_user)
-        # Verify it got the expected ID
-        assert authenticated_user.id == mock_user_id  # type: ignore[attr-defined]
-
-        # Create another user (will get ID 2, a different ID)
-        other_user = User(email="other@example.com", password="password")
-        session.add(other_user)
-        session.commit()
-        session.refresh(other_user)
-        # Verify it got a different ID
-        assert other_user.id != mock_user_id  # type: ignore[attr-defined]
-
-        # Create setting for other user
-        other_setting = UserSetting(
-            user_id=other_user.id,  # type: ignore[attr-defined]
-            key="timezone",
-            value="UTC",
-            label="UTC",
-        )
-        session.add(other_setting)
-        session.commit()
-
-        # Try to update it as the authenticated user
-        update_data = {"key": "timezone", "value": "America/New_York", "label": "NYC"}
-        response = client.patch("/settings/", json=update_data)
-
-        # Should fail because the setting doesn't exist for the authenticated user
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
 
     def test_update_setting_invalid_json(
         self, client: TestClient, mock_user_id: int

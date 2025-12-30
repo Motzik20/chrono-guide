@@ -5,8 +5,9 @@ from app.core.auth import get_current_user_id
 from app.core.db import get_db
 from app.core.default_settings import METADATA_SETTINGS
 from app.core.exceptions import NotFoundError
-from app.crud import setting_crud
-from app.schemas.user import UserSettingUpdate
+from app.crud import availability_crud, setting_crud
+from app.schemas.availability import WeeklyAvailabilityUpdate
+from app.schemas.user import AnySettingOut, SettingUpdate
 from app.services.option_factory_service import OPTION_FACTORIES
 
 router = APIRouter(prefix="/settings", tags=["settings"])
@@ -48,8 +49,15 @@ async def get_options(
 
 @router.patch("/")
 async def update_settings(
-    setting: UserSettingUpdate = Body(...),
+    setting: SettingUpdate = Body(...),
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
-):
+) -> AnySettingOut:
+    if setting.type == "schedule":
+        availability = availability_crud.update_user_availability(
+            user_id,
+            WeeklyAvailabilityUpdate.model_validate({"windows": setting.value}),
+            session,
+        )
+        return availability
     return setting_crud.update_user_setting(user_id, setting, session)

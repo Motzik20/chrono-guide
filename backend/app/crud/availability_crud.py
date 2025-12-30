@@ -1,20 +1,28 @@
 import datetime as dt
+from collections import defaultdict
 
 from sqlmodel import Session, select
 
+from app.core.default_settings import METADATA_SETTINGS
+from app.core.exceptions import NotFoundError
 from app.models.availability import DailyWindowModel, WeeklyAvailability
-from app.schemas.availability import DayOfWeek, WeeklyAvailabilityUpdate
+from app.schemas.availability import DailyWindow, DayOfWeek, WeeklyAvailabilityUpdate
+from app.schemas.user import ScheduleSettingOut
 
 
 def get_user_availability(user_id: int, session: Session) -> WeeklyAvailability:
-    return session.exec(
+    availability = session.exec(
         select(WeeklyAvailability).where(WeeklyAvailability.user_id == user_id)
-    ).one()
+    ).one_or_none()
+    if not availability:
+        raise NotFoundError("No availability found for user")
+    return availability
 
 
 def create_user_availability(user_id: int, session: Session) -> WeeklyAvailability:
     availability = WeeklyAvailability(user_id=user_id)
     session.add(availability)
+    session.flush()
     session.refresh(availability)
     assert availability.id is not None
     for day_of_week in DayOfWeek:
@@ -33,21 +41,33 @@ def create_user_availability(user_id: int, session: Session) -> WeeklyAvailabili
 
 def update_user_availability(
     user_id: int, availability: WeeklyAvailabilityUpdate, session: Session
-) -> WeeklyAvailability:
+) -> ScheduleSettingOut:
     db_availability: WeeklyAvailability = get_user_availability(user_id, session)
     assert db_availability.id is not None
     for window in db_availability.windows:
         session.delete(window)
+    windows_dict: dict[DayOfWeek, list[DailyWindow]] = defaultdict(list)
     for day_of_week, windows in availability.windows.items():
         for window in windows:
-            session.add(
-                DailyWindowModel(
-                    weekly_availability_id=db_availability.id,
-                    day_of_week=DayOfWeek(day_of_week),
-                    start_time=window.start,
-                    end_time=window.end,
-                )
+            daily_window = DailyWindowModel(
+                weekly_availability_id=db_availability.id,
+                day_of_week=DayOfWeek(day_of_week),
+                start_time=window.start,
+                end_time=window.end,
             )
-    session.commit()
+            session.add(daily_window)
+            windows_dict[day_of_week].append(window)
+    session.flush()
     session.refresh(db_availability)
-    return db_availability
+    metadata = METADATA_SETTINGS.get("availability")
+    if not metadata:
+        raise NotFoundError("No metadata found for setting key: availability")
+    return ScheduleSettingOut(
+        id=None,
+        key="availability",
+        value=windows_dict,
+        label="Availability",
+        description=metadata.get("description"),
+        option_type=metadata.get("option_type"),
+        type="schedule",
+    )

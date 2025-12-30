@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import type { Setting } from "@/lib/settings-types";
+import type { StringSetting } from "@/lib/settings-types";
 
 interface SettingTextProps {
-  setting: Setting;
+  setting: StringSetting;
   onUpdate: (value: string, label: string | null) => void;
   disabled?: boolean;
 }

@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 
 from app.core.default_settings import DEFAULT_USER_SETTINGS
 from app.core.security import check_password, create_access_token, hash_password
+from app.crud.availability_crud import create_user_availability
 from app.models.user import User
 from app.models.user_setting import UserSetting
 from app.schemas.user import UserCreate, UserLogin
@@ -28,6 +29,7 @@ def create_user(user: UserCreate, session: Session) -> User:
             user_id=user_model.id, key=key, value=value, label=label
         )
         session.add(user_setting)
+    create_user_availability(user_model.id, session)
     session.flush()
     return user_model
 
