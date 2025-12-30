@@ -60,12 +60,13 @@ class TestScheduleItem:
         assert scheduled_item.source == "other"
         assert scheduled_item.task_id is None
 
-    def test_create(self, task: Task) -> None:
+    def test_create(self, task: Task, user: User) -> None:
         tomorrow = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)
         start_time = tomorrow.replace(hour=14, minute=0, second=0, microsecond=0)
         end_time = start_time + dt.timedelta(hours=2)
 
         scheduled_item = ScheduleItemCreate(
+            user_id=user.id,  # type: ignore[attr-defined]
             task_id=task.id,  # type: ignore[attr-defined]
             start_time=start_time,
             end_time=end_time,

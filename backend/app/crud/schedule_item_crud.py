@@ -2,6 +2,7 @@ from sqlmodel import Session, select
 
 from app.core.exceptions import NotFoundError
 from app.models.schedule_item import ScheduleItem
+from app.schemas.schedule_item import ScheduleItemCreate
 from app.services.scheduling_service import ScheduleBlock
 
 
@@ -9,6 +10,20 @@ def get_user_schedule_items(user_id: int, session: Session) -> list[ScheduleItem
     return list(
         session.exec(select(ScheduleItem).where(ScheduleItem.user_id == user_id)).all()
     )
+
+
+def create_schedule_items(
+    schedule_items: list[ScheduleItemCreate], session: Session
+) -> list[ScheduleItem]:
+    schedule_item_models: list[ScheduleItem] = []
+    for schedule_item in schedule_items:
+        schedule_item_model: ScheduleItem = ScheduleItem.model_validate(schedule_item)
+        schedule_item_models.append(schedule_item_model)
+    session.add_all(schedule_item_models)
+    session.flush()
+    for schedule_item_model in schedule_item_models:
+        session.refresh(schedule_item_model)
+    return schedule_item_models
 
 
 def get_schedule_item(schedule_item_id: int, session: Session) -> ScheduleItem:

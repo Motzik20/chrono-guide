@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTaskDrafts } from "@/context/task-drafts-context";
-import { EditDialog } from "./EditDialog";
+import { DraftEditDialog } from "./DraftEditDialog";
 import { TaskCard } from "./TaskCard";
 import { apiRequest, ApiError } from "@/lib/chrono-client";
 import { toast } from "sonner";
+import { Pencil } from "lucide-react";
 
 const tasksCreateSchema = z.object({
   task_ids: z.array(z.number()),
@@ -147,6 +148,17 @@ export default function TaskDrafts() {
             task={draft}
             isSelected={selectedIndices.has(index)}
             onSelect={handleDraftSelect}
+            EditDialog={
+              <DraftEditDialog
+                selectedIndices={new Set([index])}
+                isSingleEdit={true}
+                trigger={
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                }
+              />
+            }
           />
         ))}
       </div>
@@ -161,7 +173,7 @@ export default function TaskDrafts() {
         >
           Delete Selected Tasks
         </Button>
-        <EditDialog
+        <DraftEditDialog
           selectedIndices={selectedIndices}
           trigger={
             <Button

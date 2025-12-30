@@ -9,11 +9,11 @@ from app.core.timezone import convert_model_datetimes_to_utc, now_utc
 
 
 class ScheduleItem(SQLModel, table=True):
-    __tablename__ = "schedule_items" # type: ignore[assignment]
+    __tablename__ = "schedule_items"  # type: ignore[assignment]
     __table_args__ = (Index("idx_schedule_items_user_start", "user_id", "start_time"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(default=None, foreign_key="users.id")
+    user_id: int = Field(foreign_key="users.id", nullable=False)
     task_id: int | None = Field(default=None, foreign_key="tasks.id", index=True)
     start_time: dt.datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False)

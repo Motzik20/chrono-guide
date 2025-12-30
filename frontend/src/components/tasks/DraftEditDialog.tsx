@@ -40,7 +40,7 @@ interface EditDialogProps {
   isSingleEdit?: boolean;
 }
 
-export function EditDialog({
+export function DraftEditDialog({
   selectedIndices,
   trigger,
   isSingleEdit = false,
@@ -128,6 +128,8 @@ export function EditDialog({
     setTime("10:30");
   };
 
+  const currentYear = new Date().getFullYear();
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
@@ -214,6 +216,8 @@ export function EditDialog({
                       mode="single"
                       selected={date}
                       captionLayout="dropdown"
+                      startMonth={new Date(currentYear, 0, 1)}
+                      endMonth={new Date(currentYear + 2, 0)}
                       onSelect={(selectedDate) => {
                         setDate(selectedDate || undefined);
                         setDatePickerOpen(false);

@@ -15,11 +15,13 @@ from app.models.availability import WeeklyAvailability
 from app.models.schedule_item import ScheduleItem
 from app.models.task import Task
 from app.schemas.availability import DayOfWeek, WeeklyAvailabilityBase
+from app.schemas.schedule_item import ScheduleItemCreate
 
 
 class SchedulableTask(BaseModel):
     id: int
     title: str
+    description: str | None = None
     expected_duration_minutes: int
     deadline: dt.datetime | None = None
     priority: int
@@ -39,10 +41,9 @@ class ScheduleBlock(BaseModel):
     task_id: int
     start_time: dt.datetime
     end_time: dt.datetime
-    source: str = "scheduler"
+    source: str = "task"
     title: str | None = None
     description: str | None = None
-    reason: str | None = None
 
 
 class TimeSlot(BaseModel):
@@ -110,6 +111,7 @@ def task_to_schedulable(task: Task) -> SchedulableTask:
     return SchedulableTask(
         id=task.id,
         title=task.title,
+        description=task.description,
         expected_duration_minutes=task.expected_duration_minutes,
         deadline=ensure_utc(task.deadline),
         priority=task.priority,
@@ -139,6 +141,24 @@ def schedule_items_to_busy_intervals(
     return [
         schedule_item_to_busy_interval(schedule_item)
         for schedule_item in schedule_items
+    ]
+
+
+def schedule_blocks_to_schedule_items(
+    schedule_blocks: list[ScheduleBlock],
+    user_id: int,
+) -> list[ScheduleItemCreate]:
+    return [
+        ScheduleItemCreate(
+            user_id=user_id,
+            task_id=schedule_block.task_id,
+            start_time=schedule_block.start_time,
+            end_time=schedule_block.end_time,
+            source=schedule_block.source,
+            title=schedule_block.title,
+            description=schedule_block.description,
+        )
+        for schedule_block in schedule_blocks
     ]
 
 
@@ -354,10 +374,9 @@ def _create_schedule_block(
         task_id=task.id,
         start_time=start_time,
         end_time=end_time,
-        source="scheduler",
+        source="task",
         title=task.title,
-        description=f"Scheduled task: {task.title}",
-        reason=task.title,
+        description=task.description,
     )
 
 

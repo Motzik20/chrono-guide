@@ -7,12 +7,6 @@ class NotFoundError(ValueError):
     pass
 
 
-class ValidationError(ValueError):
-    """Raised when validation fails."""
-
-    pass
-
-
 class SystemError(RuntimeError):
     """Raised when a system-level error occurs."""
 

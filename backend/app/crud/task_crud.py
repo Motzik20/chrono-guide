@@ -1,11 +1,48 @@
+import datetime as dt
+
 from sqlmodel import Session, select
 
 from app.models.task import Task
 from app.schemas.task import TaskCreate
 
 
-def get_user_tasks(user_id: int, session: Session) -> list[Task]:
-    return list(session.exec(select(Task).where(Task.user_id == user_id)).all())
+def get_unscheduled_tasks(user_id: int, session: Session) -> list[Task]:
+    return list(
+        session.exec(
+            select(Task).where(Task.user_id == user_id).where(Task.scheduled_at == None)
+        ).all()
+    )
+
+
+def get_tasks_by_ids(task_ids: list[int], user_id: int, session: Session) -> list[Task]:
+    if not task_ids:
+        return []
+    return list(
+        session.exec(
+            select(Task)
+            .where(Task.id.in_(task_ids))  # type: ignore[union-attr]
+            .where(Task.user_id == user_id)
+        ).all()
+    )
+
+
+def update_tasks_scheduled_at(
+    task_scheduled: list[int],
+    scheduled_at: dt.datetime,
+    user_id: int,
+    session: Session,
+) -> None:
+    """Update scheduled_at for multiple tasks. task_scheduled_times maps task_id to scheduled_at datetime."""
+    if not task_scheduled:
+        return
+
+    for task_id in task_scheduled:
+        task = session.exec(
+            select(Task).where(Task.id == task_id).where(Task.user_id == user_id)
+        ).one()
+        task.scheduled_at = scheduled_at
+        session.add(task)
+    session.flush()
 
 
 def create_task(task: TaskCreate, user_id: int, session: Session) -> Task:
@@ -28,15 +65,3 @@ def create_tasks(tasks: list[TaskCreate], user_id: int, session: Session) -> lis
     for task_model in task_models:
         session.refresh(task_model)
     return task_models
-
-
-def get_tasks(task_ids: list[int], user_id: int, session: Session) -> list[Task]:
-    if not task_ids:
-        return []
-    return list(
-        session.exec(
-            select(Task)
-            .where(Task.id.in_(task_ids))  # type: ignore[union-attr]
-            .where(Task.user_id == user_id)
-        ).all()
-    )

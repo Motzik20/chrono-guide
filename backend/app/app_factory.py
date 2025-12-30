@@ -1,11 +1,12 @@
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
-from app.api.routers import health, settings, tasks, users
+from app.api.routers import health, schedule, settings, tasks, users
 from app.core.config import APP_NAME, APP_VERSION
 from app.core.db import init_db
-from app.core.exceptions import NotFoundError, SystemError, ValidationError
+from app.core.exceptions import NotFoundError, SystemError
 
 
 def create_app(local: bool) -> FastAPI:
@@ -52,6 +53,7 @@ def create_app(local: bool) -> FastAPI:
     app.include_router(tasks.router)
     app.include_router(users.router)
     app.include_router(settings.router)
+    app.include_router(schedule.router)
     assert app.exception_handlers[NotFoundError] is not_found_error_handler
     assert app.exception_handlers[ValidationError] is validation_error_handler
     assert app.exception_handlers[SystemError] is system_error_handler

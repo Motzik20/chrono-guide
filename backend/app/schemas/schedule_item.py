@@ -27,6 +27,7 @@ class ScheduleItemBase(BaseModel):
 
 class ScheduleItemCreate(ScheduleItemBase):
     task_id: int | None = None
+    user_id: int
 
 
 class ScheduleItemUpdate(ScheduleItemBase):
