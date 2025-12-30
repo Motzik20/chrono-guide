@@ -7,6 +7,7 @@ import {
   getSettingInputType,
   OptionsResponseSchema,
   SettingSchema,
+  ScheduleSettingValue,
 } from "@/lib/settings-types";
 import { apiRequest } from "@/lib/chrono-client";
 import { SettingSwitch } from "./SettingSwitch";
@@ -14,6 +15,8 @@ import { SettingSelect } from "./SettingSelect";
 import { SettingCombobox } from "./SettingCombobox";
 import { SettingText } from "./SettingText";
 import { toast } from "sonner";
+import { SettingSchedule } from "./SettingSchedule";
+import { SettingUpdate } from "@/lib/settings-types";
 
 interface SettingRowProps {
   setting: Setting;
@@ -51,12 +54,19 @@ export function SettingRow({ setting, onSettingUpdated }: SettingRowProps) {
 
   // Update setting value
   const handleUpdate = useCallback(
-    async (value: string, label: string | null) => {
+    async (value: string | ScheduleSettingValue, label: string | null) => {
       setIsUpdating(true);
+      console.log("Updating setting:", setting.key, value, label, setting.type);
+      const settingUpdate: SettingUpdate = {
+        key: setting.key,
+        value,
+        label,
+        type: setting.type,
+      };
       try {
         const updated = await apiRequest(`/settings/`, SettingSchema, {
           method: "PATCH",
-          body: JSON.stringify({ key: setting.key, value, label }),
+          body: JSON.stringify(settingUpdate),
         });
         onSettingUpdated(updated);
         toast.success("Setting updated");
@@ -79,6 +89,25 @@ export function SettingRow({ setting, onSettingUpdated }: SettingRowProps) {
   };
 
   const renderInput = () => {
+    if (setting.type === "boolean") {
+      return (
+        <SettingSwitch
+          setting={setting}
+          onUpdate={handleUpdate}
+          disabled={isUpdating}
+        />
+      );
+    }
+    if (setting.type === "schedule") {
+      return (
+        <SettingSchedule
+          setting={setting}
+          onUpdate={handleUpdate}
+          disabled={isUpdating}
+        />
+      );
+    }
+
     switch (inputType) {
       case "switch":
         return (

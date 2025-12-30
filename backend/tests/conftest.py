@@ -11,6 +11,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
 from app.core.timezone import get_next_weekday, now_utc
+from app.crud.user_crud import create_user
 from app.models.availability import DailyWindowModel, WeeklyAvailability
 from app.models.schedule_item import ScheduleItem
 from app.models.task import Task
@@ -18,6 +19,7 @@ from app.models.user import User
 from app.schemas.availability import DailyWindow as DailyWindowSchema
 from app.schemas.availability import DayOfWeek
 from app.schemas.task import TaskDraft
+from app.schemas.user import UserCreate
 from app.services.scheduling_service import (
     AvailableSlots,
     BusyInterval,
@@ -57,7 +59,7 @@ def user(session: Session) -> User:
 @pytest.fixture
 def task(session: Session, user: User) -> Task:
     task = Task(
-        user_id=user.id, # type: ignore[attr-defined]
+        user_id=user.id,  # type: ignore[attr-defined]
         title="Test Task",
         description="This is a task only for test purposes",
         expected_duration_minutes=60,
@@ -72,7 +74,7 @@ def task(session: Session, user: User) -> Task:
 @pytest.fixture
 def longer_task(session: Session, user: User) -> Task:
     task = Task(
-        user_id=user.id, # type: ignore[attr-defined]
+        user_id=user.id,  # type: ignore[attr-defined]
         title="Test Task with longer duration",
         description="This is a task only for test purposes",
         expected_duration_minutes=120,
@@ -91,7 +93,7 @@ def deadline_task(session: Session, user: User) -> Task:
         hour=14, minute=0, second=0, microsecond=0, tzinfo=dt.timezone.utc
     )
     task = Task(
-        user_id=user.id, # type: ignore[attr-defined]
+        user_id=user.id,  # type: ignore[attr-defined]
         title="Test with deadline",
         description="This taks is a simple task with a deadline",
         expected_duration_minutes=60,
@@ -302,6 +304,7 @@ def daily_window_end():
     )
     return end_time
 
+
 @pytest.fixture
 def mock_task_drafts() -> list[TaskDraft]:
     """Mock task drafts returned by ChronoAgent."""
@@ -320,8 +323,11 @@ def mock_task_drafts() -> list[TaskDraft]:
         ),
     ]
 
+
 @pytest.fixture
-def mock_chrono_agent(client: TestClient, mock_task_drafts: list[TaskDraft]) -> Generator[AsyncMock, None, None]:
+def mock_chrono_agent(
+    client: TestClient, mock_task_drafts: list[TaskDraft]
+) -> Generator[AsyncMock, None, None]:
     """Fixture that mocks ChronoAgent for a test."""
     from app.api.routers.tasks import get_chrono_agent
 
@@ -334,13 +340,20 @@ def mock_chrono_agent(client: TestClient, mock_task_drafts: list[TaskDraft]) -> 
     yield mock_agent
     app.dependency_overrides.pop(get_chrono_agent, None)  # type: ignore[attr-defined]
 
+
 @pytest.fixture
-def mock_user_id(client: TestClient) -> Generator[int, None, None]:
+def mock_user_id(client: TestClient, session: Session) -> Generator[int, None, None]:
     from app.core.auth import get_current_user_id
+
     app = client.app
-    app.dependency_overrides[get_current_user_id] = lambda: 1# type: ignore[attr-defined]
-    yield 1
-    app.dependency_overrides.pop(get_current_user_id, None)# type: ignore[attr-defined]
+    app.dependency_overrides[get_current_user_id] = lambda: 1  # type: ignore[attr-defined]
+    new_user = create_user(
+        UserCreate(email="test@example.com", password="password"), session
+    )
+    assert new_user.id is not None
+    yield new_user.id  # type: ignore[attr-defined]
+    app.dependency_overrides.pop(get_current_user_id, None)  # type: ignore[attr-defined]
+
 
 @st.composite
 def datetime_strategy(
@@ -533,4 +546,3 @@ def available_slots_strategy(draw: "DrawFn") -> AvailableSlots:
         min_start = slot.end
         slots.append(slot)
     return AvailableSlots(slots=slots)
-

@@ -254,7 +254,10 @@ class TestSchedulingRanking:
 
 class TestSubtractingBusyFromWindow:
     def test_simple_subtract_busy_from_window(
-        self, daily_window_start: dt.datetime, daily_window_end: dt.datetime, busy_interval: BusyInterval
+        self,
+        daily_window_start: dt.datetime,
+        daily_window_end: dt.datetime,
+        busy_interval: BusyInterval,
     ) -> None:
         end_first_window: dt.datetime = daily_window_start + dt.timedelta(hours=2)
         start_second_window: dt.datetime = daily_window_start + dt.timedelta(hours=4)
@@ -269,7 +272,10 @@ class TestSubtractingBusyFromWindow:
         assert free_slots[1].end == second_slot.end
 
     def test_complex_subtract_busy_from_window(
-        self, daily_window_start: dt.datetime, daily_window_end: dt.datetime, busy_interval: BusyInterval
+        self,
+        daily_window_start: dt.datetime,
+        daily_window_end: dt.datetime,
+        busy_interval: BusyInterval,
     ) -> None:
         nested_busy_interval: BusyInterval = copy.deepcopy(busy_interval)
         nested_busy_interval.start_time = busy_interval.start_time + dt.timedelta(
@@ -363,23 +369,23 @@ class TestSubtractingBusyFromWindow:
             assert free_slots[0].end == window_end
             return
 
-        assert (
-            len(busy_intervals) > 0
-        ), "Should have overlapping busy intervals for main test logic"
+        assert len(busy_intervals) > 0, (
+            "Should have overlapping busy intervals for main test logic"
+        )
 
         free_slots = subtract_busy_from_window(window_start, window_end, busy_intervals)
 
         # Property 1: All free slots should be within the window
         for free_slot in free_slots:
-            assert (
-                free_slot.start >= window_start
-            ), f"Free slot starts before window: {free_slot.start} < {window_start}"
-            assert (
-                free_slot.end <= window_end
-            ), f"Free slot ends after window: {free_slot.end} > {window_end}"
-            assert (
-                free_slot.start < free_slot.end
-            ), f"Invalid slot: {free_slot.start} >= {free_slot.end}"
+            assert free_slot.start >= window_start, (
+                f"Free slot starts before window: {free_slot.start} < {window_start}"
+            )
+            assert free_slot.end <= window_end, (
+                f"Free slot ends after window: {free_slot.end} > {window_end}"
+            )
+            assert free_slot.start < free_slot.end, (
+                f"Invalid slot: {free_slot.start} >= {free_slot.end}"
+            )
 
         # Property 2: Free slots should not overlap with busy intervals
         for free_slot in free_slots:
@@ -387,22 +393,23 @@ class TestSubtractingBusyFromWindow:
                 overlap = (
                     free_slot.start < busy.end_time and free_slot.end > busy.start_time
                 )
-                assert (
-                    not overlap
-                ), f"Free slot overlaps with busy interval: {free_slot.start}-{free_slot.end} vs {busy.start_time}-{busy.end_time}"
+                assert not overlap, (
+                    f"Free slot overlaps with busy interval: {free_slot.start}-{free_slot.end} vs {busy.start_time}-{busy.end_time}"
+                )
 
         # Property 3: Free slots should not overlap with each other
         for i, slot1 in enumerate(free_slots):
             for j, slot2 in enumerate(free_slots):
                 if i != j:
                     overlap = slot1.start < slot2.end and slot1.end > slot2.start
-                    assert (
-                        not overlap
-                    ), f"Free slots overlap: {slot1.start}-{slot1.end} vs {slot2.start}-{slot2.end}"
+                    assert not overlap, (
+                        f"Free slots overlap: {slot1.start}-{slot1.end} vs {slot2.start}-{slot2.end}"
+                    )
 
         # Property 4: The total time covered by free slots should equal the window minus the actual covered busy time
         total_free_time = sum(
-            slot.duration_minutes * 60 for slot in free_slots  # Convert to seconds
+            slot.duration_minutes * 60
+            for slot in free_slots  # Convert to seconds
         )
 
         sorted_busy = sorted(busy_intervals, key=lambda bi: bi.start_time)
@@ -435,9 +442,9 @@ class TestSubtractingBusyFromWindow:
         )
 
         for i in range(len(free_slots) - 1):
-            assert (
-                free_slots[i].end <= free_slots[i + 1].start
-            ), f"Free slots not in order: {free_slots[i]} followed by {free_slots[i + 1]}"
+            assert free_slots[i].end <= free_slots[i + 1].start, (
+                f"Free slots not in order: {free_slots[i]} followed by {free_slots[i + 1]}"
+            )
 
     def test_subtract_busy_single_overlap(self):
         """Test subtracting a single busy interval that overlaps with window."""
@@ -561,11 +568,13 @@ class TestAvailableTimeSlots:
         busy_intervals_strategy(min_date=get_next_weekday(now_utc())),
     )
     def test_available_time_slots(
-        self, st_weekly_availability: SchedulerAvailability, busy_intervals: list[BusyInterval]
+        self,
+        st_weekly_availability: SchedulerAvailability,
+        busy_intervals: list[BusyInterval],
     ):
         next_monday = get_next_weekday(now_utc())
         available_slots: AvailableSlots = get_available_time_slots(
-            busy_intervals, st_weekly_availability, next_monday
+            busy_intervals, st_weekly_availability, next_monday, "UTC"
         )
         assert st_weekly_availability.windows is not None
         if not busy_intervals:
@@ -574,7 +583,7 @@ class TestAvailableTimeSlots:
             for daily_windows in st_weekly_availability.windows.values():
                 for daily_window in daily_windows:
                     assert (
-                        daily_window.start.hour
+                        daily_window.start.hour  # type: ignore
                         == available_slots.slots[index].start.hour
                     )
                     assert (
@@ -601,17 +610,17 @@ class TestAvailableTimeSlots:
         for slot in available_slots.slots:
             for busy in busy_intervals:
                 overlap = slot.start < busy.end_time and slot.end > busy.start_time
-                assert (
-                    not overlap
-                ), f"Slot {slot.start}-{slot.end} overlaps with busy interval {busy.start_time}-{busy.end_time}"
+                assert not overlap, (
+                    f"Slot {slot.start}-{slot.end} overlaps with busy interval {busy.start_time}-{busy.end_time}"
+                )
 
         for i, slot in enumerate(available_slots.slots):
             for j, slot2 in enumerate(available_slots.slots):
                 if i != j:
                     overlap = slot.start < slot2.end and slot.end > slot2.start
-                    assert (
-                        not overlap
-                    ), f"Slot {slot.start}-{slot.end} overlaps with slot {slot2.start}-{slot2.end}"
+                    assert not overlap, (
+                        f"Slot {slot.start}-{slot.end} overlaps with slot {slot2.start}-{slot2.end}"
+                    )
 
     def test_get_available_time_slots_window_before_week_start(self):
         """Test that windows before week_start are skipped."""
@@ -632,7 +641,7 @@ class TestAvailableTimeSlots:
             2024, 1, 1, 12, 0, tzinfo=dt.timezone.utc
         )  # Monday 12 PM
 
-        available_slots = get_available_time_slots([], availability, week_start)
+        available_slots = get_available_time_slots([], availability, week_start, "UTC")
 
         assert len(available_slots.slots) == 0
         assert available_slots.total_duration_minutes == 0
@@ -655,7 +664,7 @@ class TestAvailableTimeSlots:
             2024, 1, 1, 10, 0, tzinfo=dt.timezone.utc
         )  # Monday 10 AM
 
-        available_slots = get_available_time_slots([], availability, week_start)
+        available_slots = get_available_time_slots([], availability, week_start, "UTC")
 
         # Should have one slot from 10 AM to 5 PM (window start adjusted to week_start)
         assert len(available_slots.slots) == 1
@@ -683,7 +692,7 @@ class TestAvailableTimeSlots:
             2024, 1, 1, 10, 0, tzinfo=dt.timezone.utc
         )  # Monday 10 AM
 
-        available_slots = get_available_time_slots([], availability, week_start)
+        available_slots = get_available_time_slots([], availability, week_start, "UTC")
 
         # Should have no available slots since window_end <= week_start
         assert len(available_slots.slots) == 0
@@ -719,7 +728,7 @@ class TestAvailableTimeSlots:
             2024, 1, 2, 10, 0, tzinfo=dt.timezone.utc
         )  # Tuesday 10 AM
 
-        available_slots = get_available_time_slots([], availability, week_start)
+        available_slots = get_available_time_slots([], availability, week_start, "UTC")
 
         # Should have slots for:
         # 1. Tuesday: 10 AM - 6 PM (adjusted start time)
@@ -801,9 +810,9 @@ class TestPlaceTasksInSlots:
                 ):
                     in_slot = True
                     break
-            assert (
-                in_slot
-            ), f"Schedule block {schedule_block.start_time}-{schedule_block.end_time} not in any slot"
+            assert in_slot, (
+                f"Schedule block {schedule_block.start_time}-{schedule_block.end_time} not in any slot"
+            )
             scheduled_tasks_durations += (
                 schedule_block.end_time - schedule_block.start_time
             ).total_seconds() / 60
@@ -867,9 +876,9 @@ class TestPlaceTasksInSlots:
                 ):
                     in_slot = True
                     break
-            assert (
-                in_slot
-            ), f"Schedule block {schedule_block.start_time}-{schedule_block.end_time} not in any slot"
+            assert in_slot, (
+                f"Schedule block {schedule_block.start_time}-{schedule_block.end_time} not in any slot"
+            )
         for unscheduled_task in unscheduled_tasks:
             assert unscheduled_task.id in [
                 task.id for task in tasks if task not in schedule_blocks
@@ -1385,10 +1394,16 @@ class TestPlaceTasksInSlots:
 
 class TestSchedulingCore:
     def test_schedule_tasks_main_function(
-        self, task_list: list[Task], schedule_item_list: list[ScheduleItem], weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
+        self,
+        task_list: list[Task],
+        schedule_item_list: list[ScheduleItem],
+        weekly_availability: WeeklyAvailability,
+        daily_windows: list[DailyWindowSchema],
     ):
         """Test the main schedule_tasks function that serves as the API entry point."""
-        response = schedule_tasks(task_list, schedule_item_list, weekly_availability)
+        response = schedule_tasks(
+            task_list, schedule_item_list, weekly_availability, "UTC"
+        )
 
         assert isinstance(response, SchedulingResponse)
         assert isinstance(response.schedule_blocks, list)
@@ -1402,7 +1417,11 @@ class TestSchedulingCore:
             assert block.source == "scheduler"
 
     def test_schedule_core_algorithm(
-        self, task_list: list[Task], schedule_item_list: list[ScheduleItem], weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
+        self,
+        task_list: list[Task],
+        schedule_item_list: list[ScheduleItem],
+        weekly_availability: WeeklyAvailability,
+        daily_windows: list[DailyWindowSchema],
     ):
         """Test the core schedule function with a SchedulingRequest."""
         schedulable_tasks = tasks_to_schedulables(task_list)
@@ -1418,6 +1437,7 @@ class TestSchedulingCore:
             scheduler_availability=scheduler_availability,
             config=SchedulingConfig(),
             start_time=start_time,
+            user_timezone="UTC",
         )
 
         response = schedule(request)
@@ -1427,51 +1447,63 @@ class TestSchedulingCore:
         assert isinstance(response.warnings, list)
 
     def test_schedule_empty_tasks_with_daily_windows(
-        self, weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
+        self,
+        weekly_availability: WeeklyAvailability,
+        daily_windows: list[DailyWindowSchema],
     ):
         """Test scheduling with no tasks."""
         empty_tasks: list[Task] = []
         empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
-            empty_tasks, empty_schedule_items, weekly_availability
+            empty_tasks, empty_schedule_items, weekly_availability, "UTC"
         )
 
         assert len(response.schedule_blocks) == 0
         assert len(response.warnings) == 0
 
     def test_schedule_empty_tasks_without_daily_windows(
-        self, weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
+        self,
+        weekly_availability: WeeklyAvailability,
+        daily_windows: list[DailyWindowSchema],
     ):
         """Test scheduling with no tasks."""
         empty_tasks: list[Task] = []
         empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
-            empty_tasks, empty_schedule_items, weekly_availability
+            empty_tasks, empty_schedule_items, weekly_availability, "UTC"
         )
 
         assert len(response.schedule_blocks) == 0
         assert len(response.warnings) == 0
 
-    def test_schedule_no_availability(self, task_list: list[Task], schedule_item_list: list[ScheduleItem]):
+    def test_schedule_no_availability(
+        self, task_list: list[Task], schedule_item_list: list[ScheduleItem]
+    ):
         """Test scheduling with no availability windows."""
         empty_availability: WeeklyAvailability = WeeklyAvailability(windows=[])
 
-        response = schedule_tasks(task_list, schedule_item_list, empty_availability)
+        response = schedule_tasks(
+            task_list, schedule_item_list, empty_availability, "UTC"
+        )
 
         # All tasks should be unscheduled due to no availability
         assert len(response.schedule_blocks) == 0
         assert len(response.warnings) == len(task_list)
 
     def test_schedule_with_custom_config(
-        self, task_list: list[Task], schedule_item_list: list[ScheduleItem], weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
+        self,
+        task_list: list[Task],
+        schedule_item_list: list[ScheduleItem],
+        weekly_availability: WeeklyAvailability,
+        daily_windows: list[DailyWindowSchema],
     ):
         """Test schedule function with custom configuration."""
         schedulable_tasks = tasks_to_schedulables(task_list)
         busy_intervals = schedule_items_to_busy_intervals(schedule_item_list)
         scheduler_availability = SchedulerAvailability.model_validate(
-            weekly_availability
+            weekly_availability,
         )
         start_time = dt.datetime(2024, 1, 1, 9, 0, tzinfo=dt.timezone.utc)
 
@@ -1481,6 +1513,7 @@ class TestSchedulingCore:
             scheduler_availability=scheduler_availability,
             config=SchedulingConfig(allow_splitting=False),
             start_time=start_time,
+            user_timezone="UTC",
         )
 
         response = schedule(request)
@@ -1490,7 +1523,11 @@ class TestSchedulingCore:
         assert hasattr(response, "schedule_blocks")
         assert hasattr(response, "warnings")
 
-    def test_schedule_tasks_with_deadlines(self, weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]):
+    def test_schedule_tasks_with_deadlines(
+        self,
+        weekly_availability: WeeklyAvailability,
+        daily_windows: list[DailyWindowSchema],
+    ):
         """Test schedule_tasks with tasks that have deadlines."""
         tasks_with_deadlines = [
             Task(
@@ -1513,7 +1550,7 @@ class TestSchedulingCore:
         empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
-            tasks_with_deadlines, empty_schedule_items, weekly_availability
+            tasks_with_deadlines, empty_schedule_items, weekly_availability, "UTC"
         )
 
         assert isinstance(response, SchedulingResponse)
@@ -1527,7 +1564,9 @@ class TestSchedulingCore:
                 assert urgent_index < regular_index
 
     def test_schedule_tasks_with_mixed_timezones(
-        self, weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
+        self,
+        weekly_availability: WeeklyAvailability,
+        daily_windows: list[DailyWindowSchema],
     ):
         """Test schedule_tasks with tasks that have different timezone handling."""
         tasks_with_timezones = [
@@ -1551,7 +1590,7 @@ class TestSchedulingCore:
         empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
-            tasks_with_timezones, empty_schedule_items, weekly_availability
+            tasks_with_timezones, empty_schedule_items, weekly_availability, "UTC"
         )
 
         assert isinstance(response, SchedulingResponse)
@@ -1561,7 +1600,10 @@ class TestSchedulingCore:
             assert block.end_time.tzinfo is not None
 
     def test_schedule_with_overlapping_busy_intervals(
-        self, task_list: list[Task], weekly_availability: WeeklyAvailability, daily_windows: list[DailyWindowSchema]
+        self,
+        task_list: list[Task],
+        weekly_availability: WeeklyAvailability,
+        daily_windows: list[DailyWindowSchema],
     ):
         """Test scheduling with overlapping busy intervals."""
         overlapping_schedule_items = [
@@ -1586,7 +1628,7 @@ class TestSchedulingCore:
         ]
 
         response = schedule_tasks(
-            task_list, overlapping_schedule_items, weekly_availability
+            task_list, overlapping_schedule_items, weekly_availability, "UTC"
         )
 
         assert isinstance(response, SchedulingResponse)

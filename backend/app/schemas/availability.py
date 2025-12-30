@@ -27,11 +27,13 @@ class WeeklyAvailabilityBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     # The DayOfWeek has a list of DailyWindows so you can have multiple working windows for the same day
-    windows: dict[DayOfWeek, list[DailyWindow]] | None = Field(default_factory=lambda: {})
+    windows: dict[DayOfWeek, list[DailyWindow]] = Field(default_factory=lambda: {})
 
     @field_validator("windows", mode="before")
     @classmethod
-    def convert_windows(cls, v: dict[DayOfWeek, list[DailyWindow]] | Iterable[DailyWindowModel] | None) -> dict[DayOfWeek, list[DailyWindow]]:
+    def convert_windows(
+        cls, v: dict[DayOfWeek, list[DailyWindow]] | Iterable[DailyWindowModel] | None
+    ) -> dict[DayOfWeek, list[DailyWindow]]:
         """Convert SQLModel DailyWindow relationships to Pydantic format."""
         if v is None:
             return {}
@@ -56,7 +58,7 @@ class WeeklyAvailabilityCreate(WeeklyAvailabilityBase):
 
 
 class WeeklyAvailabilityUpdate(WeeklyAvailabilityBase):
-    windows: dict[DayOfWeek, list[DailyWindow]] | None = None
+    pass
 
 
 class WeeklyAvailabilityRead(WeeklyAvailabilityBase):

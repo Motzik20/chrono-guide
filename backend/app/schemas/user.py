@@ -1,8 +1,10 @@
 import datetime as dt
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.core.default_settings import DEFAULT_USER_SETTINGS
+from app.core.default_settings import METADATA_SETTINGS
+from app.schemas.availability import DailyWindow, DayOfWeek
 
 
 class UserBase(BaseModel):
@@ -41,28 +43,70 @@ class UserLogin(BaseModel):
     password: str = Field(min_length=1)
 
 
-class UserSettingOut(BaseModel):
-    id: int
+# ==== Settings Schemas ====
+
+
+class SettingBaseOut(BaseModel):
+    id: int | None = None
     key: str
-    value: str
     label: str | None = None
-    type: str
     description: str
     option_type: str | None = None
 
 
-class UserSettingsOut(BaseModel):
-    settings: list[UserSettingOut]
-
-
-class UserSettingUpdate(BaseModel):
-    key: str
+class StringSettingOut(SettingBaseOut):
+    type: Literal["string"] = "string"
     value: str
+
+
+class BooleanSettingOut(SettingBaseOut):
+    type: Literal["boolean"] = "boolean"
+    value: str
+
+
+class ScheduleSettingOut(SettingBaseOut):
+    type: Literal["schedule"] = "schedule"
+    value: dict[DayOfWeek, list[DailyWindow]]
+
+
+AnySettingOut = Annotated[
+    StringSettingOut | BooleanSettingOut | ScheduleSettingOut,
+    Field(discriminator="type"),
+]
+
+
+class UserSettingsOut(BaseModel):
+    settings: list[AnySettingOut]
+
+
+class SettingUpdateBase(BaseModel):
+    key: str
     label: str | None = None
 
     @field_validator("key")
     @classmethod
     def validate_key(cls, v: str) -> str:
-        if v not in DEFAULT_USER_SETTINGS.keys():
+        if v not in METADATA_SETTINGS.keys():
             raise ValueError(f"Invalid key: {v}")
         return v
+
+
+class StringSettingUpdate(SettingUpdateBase):
+    value: str
+    type: Literal["string"] = "string"
+
+
+class BooleanSettingUpdate(SettingUpdateBase):
+    value: str
+    type: Literal["boolean"] = "boolean"
+
+
+class ScheduleSettingUpdate(SettingUpdateBase):
+    value: dict[DayOfWeek, list[DailyWindow]]
+    type: Literal["schedule"] = "schedule"
+
+
+SettingUpdate = Annotated[
+    StringSettingUpdate | BooleanSettingUpdate | ScheduleSettingUpdate,
+    Field(discriminator="type"),
+]
