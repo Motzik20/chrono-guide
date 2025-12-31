@@ -29,7 +29,7 @@ export function TaskCard<T extends TaskBase>({
   index: number;
   isSelected: boolean;
   onSelect: (index: number, checked: boolean) => void;
-  EditDialog: React.ReactNode;
+  EditDialog?: React.ReactNode;
 }) {
   const priorityLabels: Record<string, string> = {
     "0": "Highest (0)",

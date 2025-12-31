@@ -111,7 +111,10 @@ export function DraftEditDialog({
 
     // Only update if there are changes
     if (Object.keys(updates).length > 0) {
-      updateDrafts(selectedIndices, updates);
+      const selectedDrafts = Array.from(selectedIndices).map(
+        (index) => drafts[index]
+      );
+      updateDrafts(selectedDrafts, updates);
     }
 
     // Reset form and close dialog

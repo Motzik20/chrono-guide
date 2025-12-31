@@ -84,11 +84,33 @@ async def create_tasks(
 
 
 @router.get("/unscheduled", status_code=status.HTTP_200_OK)
-async def get_tasks(
+async def get_unscheduled_tasks(
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
 ) -> list[TaskRead]:
     return [
         TaskRead.model_validate(task)
         for task in task_crud.get_unscheduled_tasks(user_id, session)
+    ]
+
+
+@router.get("/scheduled", status_code=status.HTTP_200_OK)
+async def get_scheduled_tasks(
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+) -> list[TaskRead]:
+    return [
+        TaskRead.model_validate(task)
+        for task in task_crud.get_scheduled_tasks(user_id, session)
+    ]
+
+
+@router.get("/completed", status_code=status.HTTP_200_OK)
+async def get_completed_tasks(
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+) -> list[TaskRead]:
+    return [
+        TaskRead.model_validate(task)
+        for task in task_crud.get_completed_tasks(user_id, session)
     ]

@@ -14,6 +14,27 @@ def get_unscheduled_tasks(user_id: int, session: Session) -> list[Task]:
     )
 
 
+def get_scheduled_tasks(user_id: int, session: Session) -> list[Task]:
+    """Get tasks that are scheduled but not completed."""
+    return list(
+        session.exec(
+            select(Task)
+            .where(Task.user_id == user_id)
+            .where(Task.scheduled_at != None)
+            .where(Task.completed_at == None)
+        ).all()
+    )
+
+
+def get_completed_tasks(user_id: int, session: Session) -> list[Task]:
+    """Get tasks that are completed."""
+    return list(
+        session.exec(
+            select(Task).where(Task.user_id == user_id).where(Task.completed_at != None)
+        ).all()
+    )
+
+
 def get_tasks_by_ids(task_ids: list[int], user_id: int, session: Session) -> list[Task]:
     if not task_ids:
         return []

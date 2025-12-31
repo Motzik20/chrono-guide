@@ -13,13 +13,9 @@ export default function TasksSplitView({
 }: TasksSplitViewProps) {
   return (
     <div className="flex w-full h-full flex-row">
-      <div className="w-1/2 flex justify-center items-center p-4">
-        {leftContent}
-      </div>
+      <div className="w-1/2 flex p-4">{leftContent}</div>
       <Separator orientation="vertical" className="" />
-      <div className="w-1/2 flex justify-center items-center p-4">
-        {rightContent}
-      </div>
+      <div className="w-1/2 flex p-4">{rightContent}</div>
     </div>
   );
 }

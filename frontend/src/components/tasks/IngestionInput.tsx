@@ -109,39 +109,41 @@ export default function IngestionInput() {
   }
 
   return (
-    <Card className="mx-auto max-w-2xl">
-      <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold tracking-tight">
-          Create Tasks
-        </CardTitle>
-        <CardDescription>
-          Upload a file or paste text to extract tasks automatically
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as "file" | "text")}
-        >
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="file">
-              <Upload className="mr-2 w-4 h-4" />
-              Upload File
-            </TabsTrigger>
-            <TabsTrigger value="text">
-              <FileText className="mr-2 w-4 h-4" />
-              Enter Text
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="file" className="mt-4">
-            <FileInput onSubmit={onFileSubmit} isLoading={isLoading} />
-          </TabsContent>
-          <TabsContent value="text" className="mt-4">
-            <TextInput onSubmit={onTextSubmit} isLoading={isLoading} />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+    <div className="mx-auto max-w-2xl space-y-4 flex flex-col items-center justify-center">
+      <Card className="mx-auto max-w-2xl">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold tracking-tight">
+            Create Tasks
+          </CardTitle>
+          <CardDescription>
+            Upload a file or paste text to extract tasks automatically
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as "file" | "text")}
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="file">
+                <Upload className="mr-2 w-4 h-4" />
+                Upload File
+              </TabsTrigger>
+              <TabsTrigger value="text">
+                <FileText className="mr-2 w-4 h-4" />
+                Enter Text
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="file" className="mt-4">
+              <FileInput onSubmit={onFileSubmit} isLoading={isLoading} />
+            </TabsContent>
+            <TabsContent value="text" className="mt-4">
+              <TextInput onSubmit={onTextSubmit} isLoading={isLoading} />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
