@@ -1,19 +1,27 @@
 import { useState, useCallback, useEffect } from "react";
-import { apiRequest } from "@/lib/chrono-client";
+import { apiRequest, ApiError } from "@/lib/chrono-client";
 import { TasksResponseSchema, Task } from "@/lib/task-types";
-import { useSchedule } from "@/context/schedule-context";
+import { toast } from "sonner";
 
 export function useTaskList(endpoint: string) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchTasks = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const data = await apiRequest(endpoint, TasksResponseSchema, {
         method: "GET",
       });
       setTasks(data);
+    } catch (err) {
+      const errorMessage =
+        err instanceof ApiError ? err.message : "Failed to load tasks";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setTasks([]);
     } finally {
       setIsLoading(false);
     }
@@ -23,5 +31,5 @@ export function useTaskList(endpoint: string) {
     fetchTasks();
   }, [fetchTasks]);
 
-  return { tasks, fetchTasks, isLoading };
+  return { tasks, fetchTasks, isLoading, error };
 }
