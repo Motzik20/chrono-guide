@@ -13,10 +13,10 @@ interface TaskDraftsContextType {
   drafts: TaskDraft[];
   addDrafts: (newDrafts: TaskDraft[]) => void;
   updateDrafts: (
-    selectedIndices: Set<number>,
+    selectedTasks: TaskDraft[],
     update: Partial<TaskDraft>
   ) => void;
-  deleteDrafts: (selectedIndices: Set<number>) => void;
+  deleteDrafts: (selectedTasks: TaskDraft[]) => void;
   clearDrafts: () => void;
 }
 
@@ -44,17 +44,14 @@ export function TaskDraftsProvider({
   );
 
   const updateDrafts: (
-    selectedIndices: Set<number>,
+    selectedTasks: TaskDraft[],
     update: Partial<TaskDraft>
   ) => void = useCallback(
-    (selectedIndices: Set<number>, update: Partial<TaskDraft>) => {
+    (selectedTasks: TaskDraft[], update: Partial<TaskDraft>) => {
       setDrafts((prev) => {
         const newDrafts: TaskDraft[] = [...prev];
-        selectedIndices.forEach((index) => {
-          if (index < 0 || index >= newDrafts.length) {
-            return newDrafts;
-          }
-          newDrafts[index] = { ...newDrafts[index], ...update };
+        selectedTasks.forEach((task) => {
+          newDrafts[newDrafts.indexOf(task)] = { ...task, ...update };
         });
         return newDrafts;
       });
@@ -62,13 +59,12 @@ export function TaskDraftsProvider({
     []
   );
 
-  const deleteDrafts: (selectedIndices: Set<number>) => void = useCallback(
-    (selectedIndices: Set<number>) => {
+  const deleteDrafts: (selectedTasks: TaskDraft[]) => void = useCallback(
+    (selectedTasks: TaskDraft[]) => {
       setDrafts((prev) => {
         const newDrafts: TaskDraft[] = [...prev];
-        const sortedIndices = Array.from(selectedIndices).sort((a, b) => b - a);
-        sortedIndices.forEach((index) => {
-          newDrafts.splice(index, 1);
+        selectedTasks.forEach((task) => {
+          newDrafts.splice(newDrafts.indexOf(task), 1);
         });
         return newDrafts;
       });

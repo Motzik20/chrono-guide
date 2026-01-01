@@ -10,6 +10,7 @@ from app.core.timezone import ensure_utc, get_next_weekday, now_utc
 from app.models.availability import WeeklyAvailability
 from app.models.schedule_item import ScheduleItem
 from app.models.task import Task
+from app.models.user import User
 from app.schemas.availability import DailyWindow as DailyWindowSchema
 from app.schemas.availability import DayOfWeek
 from app.services.scheduling_service import (  # noqa: PLC2701
@@ -1148,6 +1149,7 @@ class TestPlaceTasksInSlots:
         task = SchedulableTask(
             id=1,
             title="Test Task",
+            description="Test Description",
             expected_duration_minutes=60,
             priority=1,
         )
@@ -1158,10 +1160,9 @@ class TestPlaceTasksInSlots:
         assert block.task_id == 1
         assert block.start_time == start_time
         assert block.end_time == start_time + dt.timedelta(minutes=60)
-        assert block.source == "scheduler"
+        assert block.source == "task"
         assert block.title == "Test Task"
-        assert block.description == "Scheduled task: Test Task"
-        assert block.reason == "Test Task"
+        assert block.description == "Test Description"
 
     def test_fill_single_slot_exact_fit(self):
         """Test _fill_single_slot with a task that fits exactly."""
@@ -1414,7 +1415,7 @@ class TestSchedulingCore:
             assert block.start_time is not None
             assert block.end_time is not None
             assert block.start_time < block.end_time
-            assert block.source == "scheduler"
+            assert block.source == "task"
 
     def test_schedule_core_algorithm(
         self,
@@ -1604,11 +1605,13 @@ class TestSchedulingCore:
         task_list: list[Task],
         weekly_availability: WeeklyAvailability,
         daily_windows: list[DailyWindowSchema],
+        user: User,
     ):
         """Test scheduling with overlapping busy intervals."""
         overlapping_schedule_items = [
             ScheduleItem(
                 id=1,
+                user_id=user.id,  # type: ignore[attr-defined]
                 task_id=1,
                 start_time=dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.timezone.utc),
                 end_time=dt.datetime(2024, 1, 1, 12, 0, tzinfo=dt.timezone.utc),
@@ -1617,6 +1620,7 @@ class TestSchedulingCore:
             ),
             ScheduleItem(
                 id=2,
+                user_id=user.id,  # type: ignore[attr-defined]
                 task_id=2,
                 start_time=dt.datetime(
                     2024, 1, 1, 11, 0, tzinfo=dt.timezone.utc

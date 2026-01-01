@@ -11,10 +11,13 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTaskDrafts } from "@/context/task-drafts-context";
-import { EditDialog } from "./EditDialog";
+import { DraftEditDialog } from "./DraftEditDialog";
 import { TaskCard } from "./TaskCard";
 import { apiRequest, ApiError } from "@/lib/chrono-client";
 import { toast } from "sonner";
+import { Pencil } from "lucide-react";
+import TaskList from "./TaskList";
+import { TaskDraft } from "@/lib/task-types";
 
 const tasksCreateSchema = z.object({
   task_ids: z.array(z.number()),
@@ -100,26 +103,58 @@ export default function TaskDrafts() {
     }
   }
 
-  const deleteSelectedTasks = () => {
-    console.log("Deleting selected tasks:", selectedIndices);
-    deleteDrafts(selectedIndices);
-    setSelectedIndices(new Set());
+  const deleteSelectedTasks = (selectedIndices: Set<number>) => {
+    const selectedTasks = drafts.filter((draft, index) =>
+      selectedIndices.has(index)
+    );
+    console.log("Deleting selected tasks:", selectedTasks);
+    deleteDrafts(selectedTasks);
   };
 
-  if (drafts.length === 0) {
-    return (
-      <Card className="mx-auto w-1/2 max-w-2xl">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight">
-            Task Drafts
-          </CardTitle>
-          <CardDescription>
-            Task drafts will appear here after ingestion
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
+  return (
+    <div className="mx-auto max-w-2xl w-full space-y-4 flex flex-col items-center justify-center">
+      <TaskList
+        tasks={drafts}
+        title="Task Drafts"
+        description="Task drafts will appear here after ingestion"
+        emptyStateTitle="No task drafts found"
+        emptyStateDescription="Task drafts will appear here after ingestion"
+        actionButtons={[
+          {
+            label: "Save All Tasks",
+            onClick: saveAllTasks,
+          },
+          {
+            label: "Delete Selected Tasks",
+            onClick: deleteSelectedTasks,
+            variant: "destructive",
+          },
+        ]}
+        renderEditDialog={(draft, index) => (
+          <DraftEditDialog
+            selectedIndices={new Set([index])}
+            isSingleEdit={true}
+            trigger={
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Pencil className="h-4 w-4" />
+              </Button>
+            }
+          />
+        )}
+        renderBulkEditDialog={(selectedIndices) => (
+          <DraftEditDialog
+            selectedIndices={selectedIndices}
+            isSingleEdit={false}
+            trigger={
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Pencil className="h-4 w-4" />
+              </Button>
+            }
+          />
+        )}
+      />
+    </div>
+  );
 
   return (
     <div className="mx-auto max-w-2xl w-full space-y-4">
@@ -147,6 +182,17 @@ export default function TaskDrafts() {
             task={draft}
             isSelected={selectedIndices.has(index)}
             onSelect={handleDraftSelect}
+            EditDialog={
+              <DraftEditDialog
+                selectedIndices={new Set([index])}
+                isSingleEdit={true}
+                trigger={
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                }
+              />
+            }
           />
         ))}
       </div>
@@ -157,11 +203,11 @@ export default function TaskDrafts() {
         <Button
           variant="destructive"
           className="flex-1"
-          onClick={() => deleteSelectedTasks()}
+          onClick={() => deleteSelectedTasks(selectedIndices)}
         >
           Delete Selected Tasks
         </Button>
-        <EditDialog
+        <DraftEditDialog
           selectedIndices={selectedIndices}
           trigger={
             <Button

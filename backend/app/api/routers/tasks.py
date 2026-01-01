@@ -12,7 +12,9 @@ from app.schemas.task import (
     TaskCreate,
     TaskCreateResponse,
     TaskDraft,
+    TaskRead,
     TasksCreateResponse,
+    TasksDelete,
     TextAnalysisRequest,
 )
 from app.services.llm.chrono_agent import ChronoAgent
@@ -80,3 +82,45 @@ async def create_tasks(
         task_ids=[task.id for task in created_tasks if task.id is not None],
         created_count=len(created_tasks),
     )
+
+
+@router.get("/unscheduled", status_code=status.HTTP_200_OK)
+async def get_unscheduled_tasks(
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+) -> list[TaskRead]:
+    return [
+        TaskRead.model_validate(task)
+        for task in task_crud.get_unscheduled_tasks(user_id, session)
+    ]
+
+
+@router.get("/scheduled", status_code=status.HTTP_200_OK)
+async def get_scheduled_tasks(
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+) -> list[TaskRead]:
+    return [
+        TaskRead.model_validate(task)
+        for task in task_crud.get_scheduled_tasks(user_id, session)
+    ]
+
+
+@router.get("/completed", status_code=status.HTTP_200_OK)
+async def get_completed_tasks(
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+) -> list[TaskRead]:
+    return [
+        TaskRead.model_validate(task)
+        for task in task_crud.get_completed_tasks(user_id, session)
+    ]
+
+
+@router.delete("/bulk", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_tasks(
+    task_ids: list[int] = Body(...),
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+) -> None:
+    task_crud.delete_tasks(TasksDelete(task_ids=task_ids), user_id, session)

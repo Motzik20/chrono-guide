@@ -52,6 +52,8 @@ class TaskRead(BaseModel):
     priority: int
     created_at: dt.datetime
     updated_at: dt.datetime
+    scheduled_at: dt.datetime | None = None
+    completed_at: dt.datetime | None = None
 
     @field_validator("tips", mode="before")
     @classmethod
@@ -59,6 +61,10 @@ class TaskRead(BaseModel):
         if v is None:
             return []
         return v
+
+
+class TasksDelete(BaseModel):
+    task_ids: list[int]
 
 
 # LLM output (rename for clarity)

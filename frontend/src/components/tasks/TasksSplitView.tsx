@@ -1,19 +1,21 @@
 "use client";
 
-import IngestionInput from "./IngestionInput";
 import { Separator } from "@/components/ui/separator";
-import TaskDrafts from "./TaskDrafts";
 
-export default function TasksSplitView() {
+interface TasksSplitViewProps {
+  leftContent: React.ReactNode;
+  rightContent: React.ReactNode;
+}
+
+export default function TasksSplitView({
+  leftContent,
+  rightContent,
+}: TasksSplitViewProps) {
   return (
     <div className="flex w-full h-full flex-row">
-      <div className="w-1/2 flex justify-center items-center p-4">
-        <IngestionInput />
-      </div>
+      <div className="w-1/2 flex p-4">{leftContent}</div>
       <Separator orientation="vertical" className="" />
-      <div className="w-1/2 flex justify-center items-center p-4">
-        <TaskDrafts />
-      </div>
+      <div className="w-1/2 flex p-4">{rightContent}</div>
     </div>
   );
 }

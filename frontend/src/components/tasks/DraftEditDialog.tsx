@@ -40,7 +40,7 @@ interface EditDialogProps {
   isSingleEdit?: boolean;
 }
 
-export function EditDialog({
+export function DraftEditDialog({
   selectedIndices,
   trigger,
   isSingleEdit = false,
@@ -111,7 +111,10 @@ export function EditDialog({
 
     // Only update if there are changes
     if (Object.keys(updates).length > 0) {
-      updateDrafts(selectedIndices, updates);
+      const selectedDrafts = Array.from(selectedIndices).map(
+        (index) => drafts[index]
+      );
+      updateDrafts(selectedDrafts, updates);
     }
 
     // Reset form and close dialog
@@ -127,6 +130,8 @@ export function EditDialog({
     setDate(undefined);
     setTime("10:30");
   };
+
+  const currentYear = new Date().getFullYear();
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -214,6 +219,8 @@ export function EditDialog({
                       mode="single"
                       selected={date}
                       captionLayout="dropdown"
+                      startMonth={new Date(currentYear, 0, 1)}
+                      endMonth={new Date(currentYear + 2, 0)}
                       onSelect={(selectedDate) => {
                         setDate(selectedDate || undefined);
                         setDatePickerOpen(false);

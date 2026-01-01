@@ -37,5 +37,5 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.analysis.typeCheckingMode": "strict",
-  "python.analysis.extraPaths": ["${workspaceFolder}/backend"]
+  "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
 }

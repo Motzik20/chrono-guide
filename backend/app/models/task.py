@@ -9,7 +9,7 @@ from app.core.timezone import convert_model_datetimes_to_utc, now_utc
 
 
 class Task(SQLModel, table=True):
-    __tablename__ = "tasks" # type: ignore[assignment]
+    __tablename__ = "tasks"  # type: ignore[assignment]
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(default=None, foreign_key="users.id", index=True)
@@ -32,6 +32,12 @@ class Task(SQLModel, table=True):
     updated_at: dt.datetime = Field(
         default_factory=now_utc,
         sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    scheduled_at: dt.datetime | None = Field(
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    completed_at: dt.datetime | None = Field(
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
     )
 
     @model_validator(mode="before")

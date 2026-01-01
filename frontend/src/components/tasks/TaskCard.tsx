@@ -8,7 +8,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Clock, Pencil } from "lucide-react";
+import { Clock, Flag, Calendar } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -16,8 +16,6 @@ import {
 } from "@/components/ui/collapsible";
 import { Lightbulb } from "lucide-react";
 import { ChevronsUpDown } from "lucide-react";
-import { EditDialog } from "./EditDialog";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
 export function TaskCard<T extends TaskBase>({
@@ -25,11 +23,13 @@ export function TaskCard<T extends TaskBase>({
   index,
   isSelected,
   onSelect,
+  EditDialog,
 }: {
   task: T;
   index: number;
   isSelected: boolean;
   onSelect: (index: number, checked: boolean) => void;
+  EditDialog?: React.ReactNode;
 }) {
   const priorityLabels: Record<string, string> = {
     "0": "Highest (0)",
@@ -56,15 +56,7 @@ export function TaskCard<T extends TaskBase>({
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <EditDialog
-              selectedIndices={new Set([index])}
-              isSingleEdit={true}
-              trigger={
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              }
-            />
+            {EditDialog}
             <Checkbox
               checked={isSelected}
               className="h-6 w-6 border border-slate-500"
@@ -74,34 +66,40 @@ export function TaskCard<T extends TaskBase>({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Clock className="h-4 w-4" />
-          <span>
-            {task.expected_duration_minutes}{" "}
-            {task.expected_duration_minutes === 1 ? "minute" : "minutes"}
-          </span>
+        <div className="flex flex-col gap-2">
+          <Label className="text-md">
+            <Clock className="h-4 w-4" /> Estimated Duration
+          </Label>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <span>
+              {task.expected_duration_minutes}{" "}
+              {task.expected_duration_minutes === 1 ? "minute" : "minutes"}
+            </span>
+          </div>
         </div>
 
         <div className="space-y-3">
           <div className="flex flex-col gap-2">
-            <Label>Priority</Label>
-            <div className="text-sm font-medium">
-              {priorityLabels[(task.priority ?? 2).toString()]}
+            <Label className="text-md">
+              <Flag className="h-4 w-4" /> Priority
+            </Label>
+            <div className="text-muted-foreground">
+              <span>{priorityLabels[(task.priority ?? 2).toString()]}</span>
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label>Deadline</Label>
-            <div className="text-sm text-muted-foreground">
-              {formatDeadline()}
-            </div>
+            <Label className="text-md">
+              <Calendar className="h-4 w-4" /> Deadline
+            </Label>
+            <div className="text-muted-foreground">{formatDeadline()}</div>
           </div>
         </div>
         {task.tips && task.tips.length > 0 && (
           <Collapsible>
             <div className="space-y-2">
               <CollapsibleTrigger asChild className="w-20">
-                <div className="flex items-center gap-2 text-sm font-medium">
+                <div className="flex items-center gap-2 font-medium">
                   <Lightbulb className="h-4 w-4" />
                   <span>Tips</span>
                   <ChevronsUpDown className="h-4 w-4" />

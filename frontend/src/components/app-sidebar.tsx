@@ -27,8 +27,8 @@ const sidebar_items = [
     icon: <List />,
   },
   {
-    label: "Calendar",
-    href: "/calendar",
+    label: "Schedule",
+    href: "/schedule",
     icon: <Calendar />,
   },
   {
