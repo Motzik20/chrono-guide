@@ -1,60 +1,111 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { useRouter } from "next/navigation";
-import { isTokenExpired } from "@/lib/utils";
+import { apiRequest, ApiError } from "@/lib/chrono-client";
+import { z } from "zod";
+import { toast } from "sonner";
 
 interface AuthContextType {
-  token: string | null;
-  login: (token: string) => void;
-  logout: () => void;
-  isLoading: boolean;
   isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const token = localStorage.getItem("chrono_token");
-    if (token) {
-      if (isTokenExpired(token)) {
-        logout();
-      }
-      setToken(token);
+  // Check auth status on mount by making a lightweight API call
+  const checkAuth = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      // Call any protected endpoint to verify cookie is valid
+      await apiRequest("/users/me", z.object({ id: z.number() }));
+      setIsAuthenticated(true);
+    } catch {
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
-  const login = (token: string) => {
-    localStorage.setItem("chrono_token", token);
-    setToken(token);
-    router.push("/");
-  };
+  // Initial auth check
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
-  const logout = () => {
-    localStorage.removeItem("chrono_token");
-    setToken(null);
-    router.push("/login");
-  };
+  const login = useCallback(
+    async (email: string, password: string): Promise<boolean> => {
+      try {
+        // Backend sets the cookie on successful login
+        await apiRequest("/users/login", undefined, {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        });
 
+        setIsAuthenticated(true);
+        toast.success("Login successful!");
+        router.push("/");
+        return true;
+      } catch (error) {
+        const message =
+          error instanceof ApiError
+            ? error.message
+            : "Login failed. Please try again.";
+        toast.error(message);
+        return false;
+      }
+    },
+    [router]
+  );
+
+  const logout = useCallback(async () => {
+    try {
+      // Backend clears the cookie
+      await apiRequest("/users/logout", undefined, {
+        method: "POST",
+      });
+    } catch {
+      // Ignore errors - we're logging out anyway
+    } finally {
+      setIsAuthenticated(false);
+      router.push("/login");
+    }
+  }, [router]);
+
+  // Handle 401 unauthorized events from API client
   useEffect(() => {
     const handleUnauthorized = () => {
-      logout();
+      setIsAuthenticated(false);
+      router.push("/login");
+      toast.error("Session expired. Please login again.");
     };
+
     window.addEventListener("auth:unauthorized", handleUnauthorized);
     return () => {
       window.removeEventListener("auth:unauthorized", handleUnauthorized);
     };
-  }, [logout]);
+  }, [router]);
 
   return (
     <AuthContext.Provider
-      value={{ token, login, logout, isLoading, isAuthenticated: !!token }}
+      value={{
+        isAuthenticated,
+        isLoading,
+        login,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

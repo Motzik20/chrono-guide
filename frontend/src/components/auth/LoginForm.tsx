@@ -4,7 +4,7 @@ import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { apiRequest } from "@/lib/chrono-client";
+import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -15,8 +15,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/context/auth-context";
 import { AuthCard } from "./AuthCard";
+import { useState } from "react";
 
 const loginSchema = z.object({
   email: z.email({ message: "Invalid email address" }),
@@ -25,13 +25,10 @@ const loginSchema = z.object({
     .min(8, { message: "Password must be at least 8 characters long" }),
 });
 
-const loginResponseSchema = z.object({
-  access_token: z.string(),
-  token_type: z.literal("bearer"),
-});
-
 export function LoginForm() {
   const { login } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -41,16 +38,11 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
+    setIsSubmitting(true);
     try {
-      console.log("Login values:", values);
-      const data = await apiRequest("/users/login", loginResponseSchema, {
-        method: "POST",
-        body: JSON.stringify(values),
-      });
-      console.log("Login response:", data);
-      login(data.access_token);
-    } catch (error) {
-      console.error("Login failed:", error);
+      await login(values.email, values.password);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -106,8 +98,9 @@ export function LoginForm() {
           <Button
             type="submit"
             className="w-full bg-black text-white hover:bg-black/90 mt-4"
+            disabled={isSubmitting}
           >
-            Login
+            {isSubmitting ? "Logging in..." : "Login"}
           </Button>
         </form>
       </Form>
