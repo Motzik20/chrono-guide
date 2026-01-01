@@ -23,10 +23,6 @@ function buildHeaders(options: RequestInit = {}): Record<string, string> {
   const headers: Record<string, string> = {
     ...((options.headers as Record<string, string>) || {}),
   };
-  const token = localStorage.getItem("chrono_token");
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
   return headers;
 }
 
@@ -39,6 +35,7 @@ export async function apiDownloadRequest(
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers,
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -81,7 +78,7 @@ export async function apiDownloadRequest(
 
 export async function apiRequest<T>(
   endpoint: string,
-  schema: z.ZodSchema<T>,
+  schema: z.ZodSchema<T> | undefined,
   options: RequestInit = {},
   customErrorHandlers?: Partial<Record<number, () => void>>
 ): Promise<T> {
@@ -95,6 +92,7 @@ export async function apiRequest<T>(
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers,
+    credentials: "include",
   });
 
   let json;
@@ -119,6 +117,9 @@ export async function apiRequest<T>(
   }
 
   console.log("API response:", json);
+  if (!schema) {
+    return undefined as T;
+  }
   const result: ZodSafeParseResult<T> = schema.safeParse(json);
 
   if (!result.success) {

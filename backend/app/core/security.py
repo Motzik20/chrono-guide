@@ -11,16 +11,22 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
-def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
+
+def create_access_token(
+    data: dict[str, Any], expires_delta: timedelta | None = None
+) -> str:
     if JWT_SECRET_KEY is None:
         raise ValueError("JWT_SECRET_KEY is not set")
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
     to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
     return jwt.encode(to_encode, key=JWT_SECRET_KEY, algorithm=ALGORITHM)
+
 
 def decode_access_token(token: str) -> dict[str, Any]:
     try:
@@ -33,13 +39,15 @@ def decode_access_token(token: str) -> dict[str, Any]:
     except jwt.InvalidTokenError:
         raise ValueError("Invalid token")
 
+
 def hash_password(password: str) -> str:
-    bytes = password.encode('utf-8')
+    bytes = password.encode("utf-8")
     salt = bcrypt.gensalt()
     hash = bcrypt.hashpw(bytes, salt)
-    return hash.decode('utf-8')
+    return hash.decode("utf-8")
+
 
 def check_password(password: str, hashed_password: str) -> bool:
-    bytes = password.encode('utf-8')
-    hashed_bytes = hashed_password.encode('utf-8')
+    bytes = password.encode("utf-8")
+    hashed_bytes = hashed_password.encode("utf-8")
     return bcrypt.checkpw(bytes, hashed_bytes)

@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { apiRequest } from "@/lib/chrono-client";
+import { apiRequest, ApiError } from "@/lib/chrono-client";
+import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -15,12 +15,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/context/auth-context";
 import { AuthCard } from "./AuthCard";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const signupSchema = z
   .object({
-    email: z.email({ message: "Invalid email address" }),
+    email: z.string().email({ message: "Invalid email address" }),
     password: z
       .string()
       .min(8, { message: "Password must be at least 8 characters long" }),
@@ -38,13 +39,10 @@ const signupSchema = z
     }
   });
 
-const signupResponseSchema = z.object({
-  access_token: z.string(),
-  token_type: z.literal("bearer"),
-});
-
 export function SignupForm() {
   const { login } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -55,20 +53,29 @@ export function SignupForm() {
   });
 
   async function onSubmit(values: z.infer<typeof signupSchema>) {
+    setIsSubmitting(true);
     try {
-      console.log("Register values:", values);
-      const data = await apiRequest(
-        "/users/registration",
-        signupResponseSchema,
-        {
-          method: "POST",
-          body: JSON.stringify(values),
-        }
-      );
-      console.log("Login response:", data);
-      login(data.access_token);
+      // Register the user
+      await apiRequest("/users/registration", undefined, {
+        method: "POST",
+        body: JSON.stringify({
+          email: values.email,
+          password: values.password,
+        }),
+      });
+
+      toast.success("Account created! Logging you in...");
+
+      // Auto-login after registration
+      await login(values.email, values.password);
     } catch (error) {
-      console.error("Login failed:", error);
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : "Registration failed. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -131,8 +138,9 @@ export function SignupForm() {
           <Button
             type="submit"
             className="w-full bg-black text-white hover:bg-black/90 mt-4"
+            disabled={isSubmitting}
           >
-            Create Account
+            {isSubmitting ? "Creating Account..." : "Create Account"}
           </Button>
         </form>
       </Form>

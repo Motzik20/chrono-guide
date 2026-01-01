@@ -3,10 +3,11 @@
 import { useCallback } from "react";
 import TaskList from "./TaskList";
 import { TasksResponseSchema } from "@/lib/task-types";
-import { apiRequest } from "@/lib/chrono-client";
+import { apiRequest, ApiError } from "@/lib/chrono-client";
 import Link from "next/link";
 import { useSchedule } from "@/context/schedule-context";
 import { useTaskList } from "@/hooks/useTaskLists";
+import { toast } from "sonner";
 
 export default function ScheduledTasks() {
   const { tasks: scheduledTasks, fetchTasks } = useTaskList("/tasks/scheduled");
@@ -17,20 +18,35 @@ export default function ScheduledTasks() {
       const selectedTasks = scheduledTasks.filter((task, index) =>
         selectedIndices.has(index)
       );
-      const response = await apiRequest(
-        "/tasks/mark-as-completed",
-        TasksResponseSchema,
-        {
+
+      if (selectedTasks.length === 0) {
+        toast.warning("No tasks selected");
+        return;
+      }
+
+      try {
+        await apiRequest("/tasks/mark-as-completed", TasksResponseSchema, {
           method: "POST",
           body: JSON.stringify({
             task_ids: selectedTasks.map((task) => task.id),
           }),
+        });
+
+        const taskWord = selectedTasks.length === 1 ? "task" : "tasks";
+        toast.success(
+          `Marked ${selectedTasks.length} ${taskWord} as completed`
+        );
+        await fetchTasks();
+        refreshScheduleItems();
+      } catch (error) {
+        if (error instanceof ApiError) {
+          toast.error(`Failed to mark tasks as completed: ${error.message}`);
+        } else {
+          toast.error("Failed to mark tasks as completed. Please try again.");
         }
-      );
-      console.log("Response:", response);
-      await fetchTasks();
+      }
     },
-    [scheduledTasks, fetchTasks]
+    [scheduledTasks, fetchTasks, refreshScheduleItems]
   );
 
   const deleteSelectedTasks = useCallback(
@@ -39,10 +55,12 @@ export default function ScheduledTasks() {
         selectedIndices.has(index)
       );
       const taskIds = selectedTasks.map((task) => task.id);
-      await deleteTasks(taskIds);
-      await fetchTasks();
+      const success = await deleteTasks(taskIds);
+      if (success) {
+        await fetchTasks();
+      }
     },
-    [scheduledTasks, fetchTasks]
+    [scheduledTasks, fetchTasks, deleteTasks]
   );
 
   return (

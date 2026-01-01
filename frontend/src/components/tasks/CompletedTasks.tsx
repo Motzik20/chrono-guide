@@ -1,10 +1,8 @@
 "use client";
 
 import TaskList from "./TaskList";
-import { Task, TasksResponseSchema } from "@/lib/task-types";
-import { apiRequest } from "@/lib/chrono-client";
 import Link from "next/link";
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { useSchedule } from "@/context/schedule-context";
 import { useTaskList } from "@/hooks/useTaskLists";
 
@@ -17,9 +15,12 @@ export default function CompletedTasks() {
       const selectedTasks = completedTasks.filter((task, index) =>
         selectedIndices.has(index)
       );
-      await deleteTasks(selectedTasks.map((task) => task.id));
+      const success = await deleteTasks(selectedTasks.map((task) => task.id));
+      if (success) {
+        await fetchTasks();
+      }
     },
-    [completedTasks, fetchTasks]
+    [completedTasks, fetchTasks, deleteTasks]
   );
 
   return (

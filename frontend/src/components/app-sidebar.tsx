@@ -40,8 +40,13 @@ const sidebar_items = [
 
 export function AppSidebar() {
   const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
   const { logout } = useAuth();
+  const isCollapsed = state === "collapsed";
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
@@ -74,11 +79,9 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenuButton asChild>
-          <a href="#" onClick={logout}>
-            <LogOut />
-            Logout
-          </a>
+        <SidebarMenuButton onClick={handleLogout}>
+          <LogOut />
+          Logout
         </SidebarMenuButton>
       </SidebarFooter>
     </Sidebar>

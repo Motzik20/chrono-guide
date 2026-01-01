@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,12 +14,14 @@ import {
   ScheduleItem,
   ScheduleItemsResponseSchema,
 } from "@/lib/schedule-types";
-import { apiDownloadRequest, apiRequest } from "@/lib/chrono-client";
+import { apiDownloadRequest, apiRequest, ApiError } from "@/lib/chrono-client";
 import { useSchedule } from "@/context/schedule-context";
+import { toast } from "sonner";
 
 export default function ScheduleItemsList() {
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const { refreshTrigger } = useSchedule();
 
   useEffect(() => {
@@ -34,7 +35,11 @@ export default function ScheduleItemsList() {
         );
         setScheduleItems(items);
       } catch (error) {
-        console.error("Failed to fetch schedule items:", error);
+        const message =
+          error instanceof ApiError
+            ? error.message
+            : "Failed to load schedule items";
+        toast.error(message);
         setScheduleItems([]);
       } finally {
         setIsLoading(false);
@@ -45,12 +50,23 @@ export default function ScheduleItemsList() {
   }, [refreshTrigger]);
 
   const handleExport = async () => {
+    if (scheduleItems.length === 0) {
+      toast.warning("No schedule items to export");
+      return;
+    }
+
+    setIsExporting(true);
     try {
       await apiDownloadRequest("/schedule/export", {
         method: "GET",
       });
+      toast.success("Schedule exported successfully");
     } catch (error) {
-      console.error("Failed to export schedule:", error);
+      const message =
+        error instanceof ApiError ? error.message : "Failed to export schedule";
+      toast.error(message);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -96,9 +112,14 @@ export default function ScheduleItemsList() {
                 {scheduleItems.length === 1 ? "item" : "items"} scheduled
               </CardDescription>
             </div>
-            <Button onClick={handleExport} variant="outline" size="sm">
+            <Button
+              onClick={handleExport}
+              variant="outline"
+              size="sm"
+              disabled={isExporting || scheduleItems.length === 0}
+            >
               <Download className="h-4 w-4 mr-2" />
-              Export
+              {isExporting ? "Exporting..." : "Export"}
             </Button>
           </div>
         </CardHeader>

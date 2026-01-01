@@ -17,10 +17,12 @@ export default function UnscheduledTasks() {
         selectedIndices.has(index)
       );
       const taskIds = selectedTasks.map((task) => task.id);
-      await scheduleTasks(taskIds);
-      await fetchTasks();
+      const result = await scheduleTasks(taskIds);
+      if (result) {
+        await fetchTasks();
+      }
     },
-    [unscheduledTasks, scheduleTasks]
+    [unscheduledTasks, scheduleTasks, fetchTasks]
   );
 
   const deleteSelectedTasks = useCallback(
@@ -29,10 +31,12 @@ export default function UnscheduledTasks() {
         selectedIndices.has(index)
       );
       const taskIds = selectedTasks.map((task) => task.id);
-      await deleteTasks(taskIds);
-      await fetchTasks();
+      const success = await deleteTasks(taskIds);
+      if (success) {
+        await fetchTasks();
+      }
     },
-    [unscheduledTasks, fetchTasks]
+    [unscheduledTasks, fetchTasks, deleteTasks]
   );
 
   return (
