@@ -19,6 +19,66 @@ export class ApiError extends Error {
   }
 }
 
+function buildHeaders(options: RequestInit = {}): Record<string, string> {
+  const headers: Record<string, string> = {
+    ...((options.headers as Record<string, string>) || {}),
+  };
+  const token = localStorage.getItem("chrono_token");
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+export async function apiDownloadRequest(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<void> {
+  const headers = buildHeaders(options);
+
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const status: number = response.status;
+    if (globalErrorHandlers[status]) {
+      globalErrorHandlers[status]();
+    }
+    const errorText = await response.text();
+    let errorJson;
+    try {
+      errorJson = JSON.parse(errorText);
+    } catch {
+      errorJson = { detail: "Failed to download file" };
+    }
+    throw new ApiError(
+      errorJson.detail || "Failed to download file",
+      status,
+      errorJson
+    );
+  }
+
+  const contentDisposition = response.headers.get("Content-Disposition");
+  let filename = "download";
+  if (contentDisposition) {
+    filename = contentDisposition.split("filename=")[1] || "schedule.ics";
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+
+  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
+
 export async function apiRequest<T>(
   endpoint: string,
   schema: z.ZodSchema<T>,
@@ -27,14 +87,7 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const isFormData = options.body instanceof FormData;
 
-  const headers: Record<string, string> = {
-    ...((options.headers as Record<string, string>) || {}),
-  };
-
-  const token = localStorage.getItem("chrono_token");
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
+  const headers = buildHeaders(options);
 
   if (!isFormData && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
@@ -47,6 +100,7 @@ export async function apiRequest<T>(
   let json;
   try {
     const text = await response.text();
+    console.log("API response:", text);
     json = text ? JSON.parse(text) : { detail: "Failed to parse response" };
   } catch {
     json = {

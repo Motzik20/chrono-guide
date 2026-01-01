@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import TaskList from "./TaskList";
 import { Task, TasksResponseSchema } from "@/lib/task-types";
 import { apiRequest } from "@/lib/chrono-client";
@@ -9,40 +9,47 @@ import Link from "next/link";
 export default function ScheduledTasks() {
   const [scheduledTasks, setScheduledTasks] = useState<Task[]>([]);
 
-  const markAsCompleted = async (selectedIndices: Set<number>) => {
-    const selectedTasks = scheduledTasks.filter((task, index) =>
-      selectedIndices.has(index)
-    );
-    const response = await apiRequest(
-      "/tasks/mark-as-completed",
-      TasksResponseSchema,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          task_ids: selectedTasks.map((task) => task.id),
-        }),
-      }
-    );
-    console.log("Response:", response);
-  };
+  const markAsCompleted = useCallback(
+    async (selectedIndices: Set<number>) => {
+      const selectedTasks = scheduledTasks.filter((task, index) =>
+        selectedIndices.has(index)
+      );
+      const response = await apiRequest(
+        "/tasks/mark-as-completed",
+        TasksResponseSchema,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            task_ids: selectedTasks.map((task) => task.id),
+          }),
+        }
+      );
+      console.log("Response:", response);
+    },
+    [scheduledTasks]
+  );
 
-  const deleteSelectedTasks = async (selectedIndices: Set<number>) => {
-    const selectedTasks = scheduledTasks.filter((task, index) =>
-      selectedIndices.has(index)
-    );
-    console.log("Deleting selected tasks:", selectedTasks);
-    // TODO: Implement delete API call
-  };
+  const deleteSelectedTasks = useCallback(
+    async (selectedIndices: Set<number>) => {
+      const selectedTasks = scheduledTasks.filter((task, index) =>
+        selectedIndices.has(index)
+      );
+      console.log("Deleting selected tasks:", selectedTasks);
+      // TODO: Implement delete API call
+    },
+    [scheduledTasks]
+  );
+
+  const fetchScheduledTasks = useCallback(async () => {
+    const tasks = await apiRequest("/tasks/scheduled", TasksResponseSchema, {
+      method: "GET",
+    });
+    setScheduledTasks(tasks);
+  }, []);
 
   useEffect(() => {
-    const fetchScheduledTasks = async () => {
-      const tasks = await apiRequest("/tasks/scheduled", TasksResponseSchema, {
-        method: "GET",
-      });
-      setScheduledTasks(tasks);
-    };
     fetchScheduledTasks();
-  }, [markAsCompleted, deleteSelectedTasks]);
+  }, [fetchScheduledTasks]);
 
   return (
     <TaskList

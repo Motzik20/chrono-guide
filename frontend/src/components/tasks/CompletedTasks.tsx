@@ -4,27 +4,32 @@ import TaskList from "./TaskList";
 import { Task, TasksResponseSchema } from "@/lib/task-types";
 import { apiRequest } from "@/lib/chrono-client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export default function CompletedTasks() {
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
-  const deleteSelectedTasks = async (selectedIndices: Set<number>) => {
-    const selectedTasks = completedTasks.filter((task, index) =>
-      selectedIndices.has(index)
-    );
-    console.log("Deleting selected tasks:", selectedTasks);
-    // TODO: Implement delete API call
-  };
+
+  const deleteSelectedTasks = useCallback(
+    async (selectedIndices: Set<number>) => {
+      const selectedTasks = completedTasks.filter((task, index) =>
+        selectedIndices.has(index)
+      );
+      console.log("Deleting selected tasks:", selectedTasks);
+      // TODO: Implement delete API call
+    },
+    [completedTasks]
+  );
+
+  const fetchCompletedTasks = useCallback(async () => {
+    const tasks = await apiRequest("/tasks/completed", TasksResponseSchema, {
+      method: "GET",
+    });
+    setCompletedTasks(tasks);
+  }, []);
 
   useEffect(() => {
-    const fetchCompletedTasks = async () => {
-      const tasks = await apiRequest("/tasks/completed", TasksResponseSchema, {
-        method: "GET",
-      });
-      setCompletedTasks(tasks);
-    };
     fetchCompletedTasks();
-  }, [deleteSelectedTasks]);
+  }, [fetchCompletedTasks]);
 
   return (
     <TaskList

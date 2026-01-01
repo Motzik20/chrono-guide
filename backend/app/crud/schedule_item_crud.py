@@ -6,10 +6,13 @@ from app.schemas.schedule_item import ScheduleItemCreate
 from app.services.scheduling_service import ScheduleBlock
 
 
-def get_user_schedule_items(user_id: int, session: Session) -> list[ScheduleItem]:
-    return list(
-        session.exec(select(ScheduleItem).where(ScheduleItem.user_id == user_id)).all()
-    )
+def get_user_schedule_items(
+    user_id: int, session: Session, source: str | None = None
+) -> list[ScheduleItem]:
+    query = select(ScheduleItem).where(ScheduleItem.user_id == user_id)
+    if source:
+        query = query.where(ScheduleItem.source == source)
+    return list(session.exec(query).all())
 
 
 def create_schedule_items(

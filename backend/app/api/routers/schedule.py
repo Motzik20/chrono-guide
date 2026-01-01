@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, Response
 from sqlmodel import Session
 
 from app.core.auth import get_current_user_id
@@ -16,6 +16,7 @@ from app.models.schedule_item import ScheduleItem
 from app.models.task import Task
 from app.schemas.schedule_item import ScheduleItemCreate
 from app.schemas.schedule_requests import ScheduleGenerateRequest
+from app.services.ical_service import export_calendar_from_schedule_items
 from app.services.scheduling_service import (
     SchedulingResponse,
     schedule_blocks_to_schedule_items,
@@ -26,9 +27,27 @@ router = APIRouter(prefix="/schedule", tags=["schedule"])
 
 
 @router.get("/export")
-async def export_schedule() -> dict[str, str]:
-    # TODO: The exported schedule_items should have a UID that we can use to identify so that the live sync doesn't cause "echo" problems.
-    return {"Not implemented": "Exporting schedules is not implemented"}
+async def export_schedule(
+    user_id: int = Depends(get_current_user_id), session: Session = Depends(get_db)
+) -> Response:
+    schedule_items: list[ScheduleItem] = get_user_schedule_items(
+        user_id, session, source="task"
+    )
+    ical_bytes: bytes = export_calendar_from_schedule_items(schedule_items)
+    return Response(
+        content=ical_bytes,
+        media_type="text/calendar",
+        headers={"Content-Disposition": f"attachment; filename=schedule_{user_id}.ics"},
+    )
+
+
+@router.get("/items")
+async def get_schedule_items(
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+    source: str | None = None,
+) -> list[ScheduleItem]:
+    return get_user_schedule_items(user_id, session, source)
 
 
 @router.post("/generate/selected")
