@@ -63,6 +63,10 @@ class TaskRead(BaseModel):
         return v
 
 
+class TasksDelete(BaseModel):
+    task_ids: list[int]
+
+
 # LLM output (rename for clarity)
 class TaskExtracted(BaseModel):
     title: str

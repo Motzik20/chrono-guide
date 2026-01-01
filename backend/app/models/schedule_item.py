@@ -14,7 +14,9 @@ class ScheduleItem(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", nullable=False)
-    task_id: int | None = Field(default=None, foreign_key="tasks.id", index=True)
+    task_id: int | None = Field(
+        default=None, foreign_key="tasks.id", index=True, ondelete="CASCADE"
+    )
     start_time: dt.datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )

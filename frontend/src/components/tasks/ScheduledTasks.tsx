@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
 import TaskList from "./TaskList";
-import { Task, TasksResponseSchema } from "@/lib/task-types";
+import { TasksResponseSchema } from "@/lib/task-types";
 import { apiRequest } from "@/lib/chrono-client";
 import Link from "next/link";
+import { useSchedule } from "@/context/schedule-context";
+import { useTaskList } from "@/hooks/useTaskLists";
 
 export default function ScheduledTasks() {
-  const [scheduledTasks, setScheduledTasks] = useState<Task[]>([]);
+  const { tasks: scheduledTasks, fetchTasks } = useTaskList("/tasks/scheduled");
+  const { deleteTasks, refreshScheduleItems } = useSchedule();
 
   const markAsCompleted = useCallback(
     async (selectedIndices: Set<number>) => {
@@ -25,8 +28,9 @@ export default function ScheduledTasks() {
         }
       );
       console.log("Response:", response);
+      await fetchTasks();
     },
-    [scheduledTasks]
+    [scheduledTasks, fetchTasks]
   );
 
   const deleteSelectedTasks = useCallback(
@@ -34,22 +38,12 @@ export default function ScheduledTasks() {
       const selectedTasks = scheduledTasks.filter((task, index) =>
         selectedIndices.has(index)
       );
-      console.log("Deleting selected tasks:", selectedTasks);
-      // TODO: Implement delete API call
+      const taskIds = selectedTasks.map((task) => task.id);
+      await deleteTasks(taskIds);
+      await fetchTasks();
     },
-    [scheduledTasks]
+    [scheduledTasks, fetchTasks]
   );
-
-  const fetchScheduledTasks = useCallback(async () => {
-    const tasks = await apiRequest("/tasks/scheduled", TasksResponseSchema, {
-      method: "GET",
-    });
-    setScheduledTasks(tasks);
-  }, []);
-
-  useEffect(() => {
-    fetchScheduledTasks();
-  }, [fetchScheduledTasks]);
 
   return (
     <TaskList

@@ -2,8 +2,22 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import UnscheduledTasks from "./UnscheduledTasks";
 import ScheduledTasks from "./ScheduledTasks";
 import CompletedTasks from "./CompletedTasks";
+import { apiRequest } from "@/lib/chrono-client";
+import { z } from "zod";
+import { useCallback } from "react";
 
-export default function TaskLifecycleTabs() {
+interface TaskLifecycleTabsProps {
+  onScheduleItemsChange?: () => void;
+}
+
+export default function TaskLifecycleTabs({
+  onScheduleItemsChange,
+}: TaskLifecycleTabsProps) {
+  const handleDeleteTasks = useCallback(
+    async (taskIds: number[]): Promise<void> => {},
+    [onScheduleItemsChange]
+  );
+
   return (
     <Tabs defaultValue="unscheduled" className="w-full h-full flex flex-col">
       <TabsList className="grid w-full grid-cols-3 h-12 flex-shrink-0">

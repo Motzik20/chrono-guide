@@ -16,10 +16,12 @@ import {
   ScheduleItemsResponseSchema,
 } from "@/lib/schedule-types";
 import { apiDownloadRequest, apiRequest } from "@/lib/chrono-client";
+import { useSchedule } from "@/context/schedule-context";
 
 export default function ScheduleItemsList() {
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { refreshTrigger } = useSchedule();
 
   useEffect(() => {
     const fetchScheduleItems = async () => {
@@ -40,7 +42,7 @@ export default function ScheduleItemsList() {
     };
 
     fetchScheduleItems();
-  }, []);
+  }, [refreshTrigger]);
 
   const handleExport = async () => {
     try {

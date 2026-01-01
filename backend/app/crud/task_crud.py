@@ -3,7 +3,7 @@ import datetime as dt
 from sqlmodel import Session, select
 
 from app.models.task import Task
-from app.schemas.task import TaskCreate
+from app.schemas.task import TaskCreate, TasksDelete
 
 
 def get_unscheduled_tasks(user_id: int, session: Session) -> list[Task]:
@@ -86,3 +86,20 @@ def create_tasks(tasks: list[TaskCreate], user_id: int, session: Session) -> lis
     for task_model in task_models:
         session.refresh(task_model)
     return task_models
+
+
+def delete_task(task_id: int, user_id: int, session: Session) -> None:
+    task = session.exec(
+        select(Task).where(Task.id == task_id).where(Task.user_id == user_id)
+    ).one()
+    session.delete(task)
+    session.flush()
+
+
+def delete_tasks(tasks_delete: TasksDelete, user_id: int, session: Session) -> None:
+    for task_id in tasks_delete.task_ids:
+        task = session.exec(
+            select(Task).where(Task.id == task_id).where(Task.user_id == user_id)
+        ).one()
+        session.delete(task)
+    session.flush()

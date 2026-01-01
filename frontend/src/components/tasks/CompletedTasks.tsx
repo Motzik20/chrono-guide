@@ -5,31 +5,22 @@ import { Task, TasksResponseSchema } from "@/lib/task-types";
 import { apiRequest } from "@/lib/chrono-client";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { useSchedule } from "@/context/schedule-context";
+import { useTaskList } from "@/hooks/useTaskLists";
 
 export default function CompletedTasks() {
-  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+  const { tasks: completedTasks, fetchTasks } = useTaskList("/tasks/completed");
+  const { deleteTasks } = useSchedule();
 
   const deleteSelectedTasks = useCallback(
     async (selectedIndices: Set<number>) => {
       const selectedTasks = completedTasks.filter((task, index) =>
         selectedIndices.has(index)
       );
-      console.log("Deleting selected tasks:", selectedTasks);
-      // TODO: Implement delete API call
+      await deleteTasks(selectedTasks.map((task) => task.id));
     },
-    [completedTasks]
+    [completedTasks, fetchTasks]
   );
-
-  const fetchCompletedTasks = useCallback(async () => {
-    const tasks = await apiRequest("/tasks/completed", TasksResponseSchema, {
-      method: "GET",
-    });
-    setCompletedTasks(tasks);
-  }, []);
-
-  useEffect(() => {
-    fetchCompletedTasks();
-  }, [fetchCompletedTasks]);
 
   return (
     <TaskList

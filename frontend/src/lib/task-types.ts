@@ -53,3 +53,9 @@ export const ScheduleResponseSchema = z.object({
 });
 
 export type ScheduleResponse = z.infer<typeof ScheduleResponseSchema>;
+
+export const DeleteTasksRequestSchema = z.object({
+  task_ids: z.array(z.number()),
+});
+
+export type DeleteTasksRequest = z.infer<typeof DeleteTasksRequestSchema>;

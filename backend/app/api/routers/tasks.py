@@ -14,6 +14,7 @@ from app.schemas.task import (
     TaskDraft,
     TaskRead,
     TasksCreateResponse,
+    TasksDelete,
     TextAnalysisRequest,
 )
 from app.services.llm.chrono_agent import ChronoAgent
@@ -114,3 +115,12 @@ async def get_completed_tasks(
         TaskRead.model_validate(task)
         for task in task_crud.get_completed_tasks(user_id, session)
     ]
+
+
+@router.delete("/bulk", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_tasks(
+    task_ids: list[int] = Body(...),
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+) -> None:
+    task_crud.delete_tasks(TasksDelete(task_ids=task_ids), user_id, session)
