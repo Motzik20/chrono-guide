@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
@@ -10,9 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TaskCard } from "./TaskCard";
-import { TaskBase, TasksResponseSchema } from "@/lib/task-types";
-import Link from "next/link";
-import { apiRequest } from "@/lib/chrono-client";
+import { TaskBase } from "@/lib/task-types";
 
 interface TaskListProps {
   tasks: TaskBase[];

@@ -194,7 +194,7 @@ function FileInput({
         <FormField
           control={fileForm.control}
           name="file"
-          render={({ field: { value, onChange, ...fieldProps } }) => (
+          render={({ field: { onChange, ...fieldProps } }) => (
             <FormItem>
               <FormLabel>Input File</FormLabel>
               <FormControl>
@@ -238,15 +238,20 @@ function FileInput({
                     </div>
                   )}
                   <Input
-                    {...fieldProps}
                     ref={fileInputRef}
                     type="file"
                     accept={ACCEPTED_FILE_TYPES.join(",")}
                     className="hidden"
                     id="file-input"
+                    name="file"
+                    onBlur={fieldProps.onBlur}
+                    disabled={fieldProps.disabled}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleFileChange(file);
+                      if (file) {
+                        handleFileChange(file);
+                        onChange(file);
+                      }
                     }}
                   />
                   <label htmlFor="file-input" className="cursor-pointer">

@@ -36,8 +36,6 @@ export function SettingCombobox({
 }: SettingComboboxProps) {
   const [open, setOpen] = useState(false);
 
-  const selectedOption = options.find((opt) => opt.value === setting.value);
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>

@@ -27,7 +27,7 @@ jobs:
       - name: Run tests
         run: poetry run pytest tests/ -v
 
-  build:
+  build-backend:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -52,4 +52,22 @@ jobs:
         with:
           name: dist
           path: backend/dist/
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install and check
+        working-directory: ./frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm lint
+          pnpm format:check
+          pnpm tsc --noEmit
+          pnpm build
 
