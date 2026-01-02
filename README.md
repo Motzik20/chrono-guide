@@ -33,7 +33,7 @@ An intelligent task scheduling system that uses AI to extract tasks from content
    Create `backend/.env`:
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
-   SECRET_KEY=your_secret_key_here
+   JWT_SECRET_KEY=your_secret_key_here
    DATABASE_URL=postgresql+psycopg://chrono:chrono@db:5432/chrono
    ```
 

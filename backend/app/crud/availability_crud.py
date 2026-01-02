@@ -49,6 +49,7 @@ def update_user_availability(
     for window in db_availability.windows:
         session.delete(window)
 
+    session.flush()
     # Create new windows
     for day_of_week, windows in availability.windows.items():
         for window in windows:
