@@ -117,7 +117,7 @@ export default function TaskDrafts() {
         tasks={drafts}
         title="Task Drafts"
         description={`${drafts.length} ${drafts.length === 1 ? "task draft" : "task drafts"} found`}
-        emptyStateTitle="No task drafts found"
+        emptyStateTitle="No task drafts"
         emptyStateDescription="Task drafts will appear here after ingestion"
         actionButtons={[
           {
