@@ -61,7 +61,6 @@ def upgrade() -> None:
                         {"id": existing.id, "label": values_dict["label"], "value": values_dict["value"]}
                     )
  
-    connection.commit()
 
 def downgrade() -> None:
     """Downgrade schema."""
