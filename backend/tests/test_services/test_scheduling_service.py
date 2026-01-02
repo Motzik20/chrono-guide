@@ -1403,7 +1403,7 @@ class TestSchedulingCore:
     ):
         """Test the main schedule_tasks function that serves as the API entry point."""
         response = schedule_tasks(
-            task_list, schedule_item_list, weekly_availability, "UTC"
+            task_list, schedule_item_list, weekly_availability, SchedulingConfig()
         )
 
         assert isinstance(response, SchedulingResponse)
@@ -1486,7 +1486,7 @@ class TestSchedulingCore:
         empty_availability: WeeklyAvailability = WeeklyAvailability(windows=[])
 
         response = schedule_tasks(
-            task_list, schedule_item_list, empty_availability, "UTC"
+            task_list, schedule_item_list, empty_availability, SchedulingConfig()
         )
 
         # All tasks should be unscheduled due to no availability
@@ -1551,7 +1551,10 @@ class TestSchedulingCore:
         empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
-            tasks_with_deadlines, empty_schedule_items, weekly_availability, "UTC"
+            tasks_with_deadlines,
+            empty_schedule_items,
+            weekly_availability,
+            SchedulingConfig(),
         )
 
         assert isinstance(response, SchedulingResponse)
@@ -1591,7 +1594,10 @@ class TestSchedulingCore:
         empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
-            tasks_with_timezones, empty_schedule_items, weekly_availability, "UTC"
+            tasks_with_timezones,
+            empty_schedule_items,
+            weekly_availability,
+            SchedulingConfig(),
         )
 
         assert isinstance(response, SchedulingResponse)
@@ -1632,7 +1638,10 @@ class TestSchedulingCore:
         ]
 
         response = schedule_tasks(
-            task_list, overlapping_schedule_items, weekly_availability, "UTC"
+            task_list,
+            overlapping_schedule_items,
+            weekly_availability,
+            SchedulingConfig(),
         )
 
         assert isinstance(response, SchedulingResponse)
