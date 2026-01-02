@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.13-slim AS base
 
 WORKDIR /backend
 
@@ -8,11 +8,16 @@ RUN poetry config virtualenvs.create false
 
 COPY pyproject.toml poetry.lock ./
 
-RUN poetry install --no-dev --no-interaction --no-ansi
-
+FROM base AS dev
+RUN poetry install --no-interaction --no-ansi
 COPY ./app ./app
 COPY alembic.ini ./
-
 EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
+FROM base AS prod
+RUN poetry install --no-dev --no-interaction --no-ansi
+COPY ./app ./app
+COPY alembic.ini ./
+EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

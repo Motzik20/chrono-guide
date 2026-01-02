@@ -1,4 +1,4 @@
-*.env
+*.env*
 .hypothesis
 TODO.md
 .pytest_cache
