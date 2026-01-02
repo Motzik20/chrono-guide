@@ -18,14 +18,16 @@ from app.schemas.task import (
     TasksDelete,
     TextAnalysisRequest,
 )
-from app.services.llm.chrono_agent import ChronoAgent
+from app.services.llm.gemini_agent import GeminiAgent
+from app.services.protocols import ChronoAgent
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
 @cache
 def get_chrono_agent() -> ChronoAgent:
-    return ChronoAgent()
+    """Dependency injection for TaskAnalyzer. Returns ChronoAgent by default."""
+    return GeminiAgent()
 
 
 @router.post("/ingest/file")

@@ -20,14 +20,14 @@ from app.schemas.availability import DailyWindow as DailyWindowSchema
 from app.schemas.availability import DayOfWeek
 from app.schemas.task import TaskDraft
 from app.schemas.user import UserCreate
-from app.services.scheduling_service import (
+from app.services.scheduling_types import (
     AvailableSlots,
     BusyInterval,
     SchedulableTask,
     SchedulerAvailability,
     TimeSlot,
-    schedule_item_to_busy_interval,
 )
+from app.services.scheduling_utils import schedule_item_to_busy_interval
 
 
 @pytest.fixture

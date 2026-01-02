@@ -9,7 +9,15 @@ from google.genai.types import GenerateContentResponse, Part
 from app.schemas.task import FileAnalysisRequest, TaskDraft
 
 
-class ChronoAgent:
+class GeminiAgent:
+    """
+    Google Gemini-based implementation of TaskAnalyzer protocol.
+
+    This class implements the TaskAnalyzer protocol by providing:
+    - analyze_tasks_from_file: Extracts tasks from uploaded files
+    - analyze_tasks_from_text: Extracts tasks from text input
+    """
+
     client: genai.Client
 
     def __init__(self) -> None:

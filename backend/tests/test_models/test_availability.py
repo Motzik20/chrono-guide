@@ -14,7 +14,7 @@ from app.schemas.availability import (
     WeeklyAvailabilityCreate,
     WeeklyAvailabilityRead,
 )
-from app.services.scheduling_service import SchedulerAvailability
+from app.services.scheduling_types import SchedulerAvailability
 
 
 class TestWeeklyAvailability:
