@@ -14,8 +14,8 @@ export default function UnscheduledTasks() {
   const handleScheduleTasks = useCallback(
     async (selectedIndices: Set<number>) => {
       const selectedTasks = unscheduledTasks.filter((task, index) =>
-        selectedIndices.has(index)
-      );
+      selectedIndices.has(index)
+    );
       const taskIds = selectedTasks.map((task) => task.id);
       const result = await scheduleTasks(taskIds);
       if (result) {
@@ -49,8 +49,8 @@ export default function UnscheduledTasks() {
       emptyStateTitle="Tasks"
       emptyStateDescription={
         <>
-          Tasks will appear here after saving them under{" "}
-          <Link href="/tasks">Tasks</Link>
+            Tasks will appear here after saving them under{" "}
+            <Link href="/tasks">Tasks</Link>
         </>
       }
       actionButtons={[

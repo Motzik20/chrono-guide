@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from app.core.exceptions import NotFoundError
 from app.models.user_setting import UserSetting
 from app.schemas.user import BooleanSettingUpdate, StringSettingUpdate
-from app.services.scheduling_service import SchedulingConfig
+from app.services.scheduling_types import SchedulingConfig
 
 
 def get_user_settings(user_id: int, session: Session) -> list[UserSetting]:

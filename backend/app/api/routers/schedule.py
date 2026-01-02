@@ -17,15 +17,18 @@ from app.models.schedule_item import ScheduleItem
 from app.models.task import Task
 from app.schemas.schedule_item import ScheduleItemCreate
 from app.schemas.schedule_requests import ScheduleGenerateRequest
+from app.services.greedy_scheduler import GreedyScheduler
 from app.services.ical_service import export_calendar_from_schedule_items
-from app.services.scheduling_service import (
-    SchedulingConfig,
-    SchedulingResponse,
-    schedule_blocks_to_schedule_items,
-    schedule_tasks,
-)
+from app.services.protocols import ChronoScheduler
+from app.services.scheduling_types import SchedulingConfig, SchedulingResponse
+from app.services.scheduling_utils import schedule_blocks_to_schedule_items
 
 router = APIRouter(prefix="/schedule", tags=["schedule"])
+
+
+def get_task_scheduler() -> ChronoScheduler:
+    """Dependency injection for ChronoScheduler. Returns GreedyScheduler by default."""
+    return GreedyScheduler()
 
 
 @router.get("/export")
@@ -57,6 +60,7 @@ async def generate_schedule(
     generate_schedule_request: ScheduleGenerateRequest = Body(...),
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
+    scheduler: ChronoScheduler = Depends(get_task_scheduler),
 ) -> SchedulingResponse:
     tasks: list[Task] = get_tasks_by_ids(
         generate_schedule_request.task_ids, user_id, session
@@ -64,7 +68,7 @@ async def generate_schedule(
     schedule_items: list[ScheduleItem] = get_user_schedule_items(user_id, session)
     availability: WeeklyAvailability = get_user_availability(user_id, session)
     schedule_config: SchedulingConfig = get_schedule_config(user_id, session)
-    response: SchedulingResponse = schedule_tasks(
+    response: SchedulingResponse = scheduler.schedule_tasks(
         tasks, schedule_items, availability, schedule_config
     )
     schedule_items_to_create: list[ScheduleItemCreate] = (
@@ -85,12 +89,13 @@ async def generate_schedule(
 async def generate_schedule_all(
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
+    scheduler: ChronoScheduler = Depends(get_task_scheduler),
 ) -> SchedulingResponse:
     schedule_config: SchedulingConfig = get_schedule_config(user_id, session)
     tasks: list[Task] = get_unscheduled_tasks(user_id, session)
     schedule_items: list[ScheduleItem] = get_user_schedule_items(user_id, session)
     availability: WeeklyAvailability = get_user_availability(user_id, session)
-    response: SchedulingResponse = schedule_tasks(
+    response: SchedulingResponse = scheduler.schedule_tasks(
         tasks, schedule_items, availability, schedule_config
     )
     schedule_items_to_create: list[ScheduleItemCreate] = (

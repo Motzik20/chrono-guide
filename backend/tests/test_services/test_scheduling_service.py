@@ -13,7 +13,8 @@ from app.models.task import Task
 from app.models.user import User
 from app.schemas.availability import DailyWindow as DailyWindowSchema
 from app.schemas.availability import DayOfWeek
-from app.services.scheduling_service import (  # noqa: PLC2701
+from app.services.greedy_scheduler import GreedyScheduler, schedule_tasks
+from app.services.scheduling_types import (
     AvailableSlots,
     BusyInterval,
     SchedulableTask,
@@ -23,17 +24,9 @@ from app.services.scheduling_service import (  # noqa: PLC2701
     SchedulingRequest,
     SchedulingResponse,
     TimeSlot,
-    _create_schedule_block,  # type: ignore[attr-defined]
-    _fill_single_slot,  # type: ignore[attr-defined]
-    _find_best_fitting_task,  # type: ignore[attr-defined]
-    _remove_task_from_deque,  # type: ignore[attr-defined]
-    get_available_time_slots,
-    place_tasks_in_slots,
-    rank_tasks,
-    schedule,
+)
+from app.services.scheduling_utils import (
     schedule_items_to_busy_intervals,
-    schedule_tasks,
-    subtract_busy_from_window,
     task_to_schedulable,
     tasks_to_schedulables,
 )
@@ -43,6 +36,18 @@ from tests.conftest import (
     schedulable_task_strategy,
     weekly_availability_strategy,
 )
+
+_scheduler = GreedyScheduler()
+
+schedule = _scheduler._schedule  # type: ignore[attr-defined]
+get_available_time_slots = _scheduler._get_available_time_slots  # type: ignore[attr-defined]
+subtract_busy_from_window = _scheduler._subtract_busy_from_window  # type: ignore[attr-defined]
+rank_tasks = _scheduler._rank_tasks  # type: ignore[attr-defined]
+place_tasks_in_slots = _scheduler._place_tasks_in_slots  # type: ignore[attr-defined]
+_create_schedule_block = _scheduler._create_schedule_block  # type: ignore[attr-defined]
+_fill_single_slot = _scheduler._fill_single_slot  # type: ignore[attr-defined]
+_find_best_fitting_task = _scheduler._find_best_fitting_task  # type: ignore[attr-defined]
+_remove_task_from_deque = _scheduler._remove_task_from_deque  # type: ignore[attr-defined]
 
 
 def get_remaining_free_slots(
@@ -1438,7 +1443,6 @@ class TestSchedulingCore:
             scheduler_availability=scheduler_availability,
             config=SchedulingConfig(),
             start_time=start_time,
-            user_timezone="UTC",
         )
 
         response = schedule(request)
@@ -1457,7 +1461,7 @@ class TestSchedulingCore:
         empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
-            empty_tasks, empty_schedule_items, weekly_availability, "UTC"
+            empty_tasks, empty_schedule_items, weekly_availability, SchedulingConfig()
         )
 
         assert len(response.schedule_blocks) == 0
@@ -1473,7 +1477,7 @@ class TestSchedulingCore:
         empty_schedule_items: list[ScheduleItem] = []
 
         response = schedule_tasks(
-            empty_tasks, empty_schedule_items, weekly_availability, "UTC"
+            empty_tasks, empty_schedule_items, weekly_availability, SchedulingConfig()
         )
 
         assert len(response.schedule_blocks) == 0
@@ -1514,7 +1518,6 @@ class TestSchedulingCore:
             scheduler_availability=scheduler_availability,
             config=SchedulingConfig(allow_splitting=False),
             start_time=start_time,
-            user_timezone="UTC",
         )
 
         response = schedule(request)

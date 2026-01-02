@@ -5,7 +5,7 @@ Only essential schemas - no duplication of existing models.
 
 from pydantic import BaseModel, Field
 
-from app.services.scheduling_service import ScheduleBlock
+from app.services.scheduling_types import ScheduleBlock
 
 
 class ScheduleGenerateRequest(BaseModel):

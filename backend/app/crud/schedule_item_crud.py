@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from app.core.exceptions import NotFoundError
 from app.models.schedule_item import ScheduleItem
 from app.schemas.schedule_item import ScheduleItemCreate
-from app.services.scheduling_service import ScheduleBlock
+from app.services.scheduling_types import ScheduleBlock
 
 
 def get_user_schedule_items(
