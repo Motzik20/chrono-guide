@@ -22,7 +22,7 @@ class ChronoAgent:
     async def analyze_tasks_from_file(
         self, file_request: FileAnalysisRequest
     ) -> list[TaskDraft]:
-        prompt: str = "From the file, identify and list all tasks. For each task, include: Concise Title, Description, Estimated Duration, and 2-4 actionable Tips derived from the visual context."
+        prompt: str = f"From the file, identify and list all tasks. For each task, include: Concise Title, Description, Estimated Duration, and 2-4 actionable Tips derived from the visual context. Respond in {file_request.language}."
 
         contents_parts: list[Part] = [
             Part(
@@ -34,13 +34,15 @@ class ChronoAgent:
             Part(text=prompt),
         ]
 
-        response: GenerateContentResponse = await self.client.aio.models.generate_content( #type: ignore[arg-type]
-            model="gemini-2.5-flash",
-            contents=contents_parts,
-            config={
-                "response_mime_type": "application/json",
-                "response_schema": list[TaskDraft],
-            },
+        response: GenerateContentResponse = (
+            await self.client.aio.models.generate_content(  # type: ignore[arg-type]
+                model="gemini-2.5-flash",
+                contents=contents_parts,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": list[TaskDraft],
+                },
+            )
         )
         if response.text is None:
             return []
@@ -50,21 +52,25 @@ class ChronoAgent:
         ]
         return analyzed_tasks
 
-    async def analyze_tasks_from_text(self, text: str) -> list[TaskDraft]:
-        prompt: str = "From the text, identify and list all tasks. For each task, include: Concise Title, Description, Estimated Duration, and 2-4 actionable Tips derived from the text."
+    async def analyze_tasks_from_text(
+        self, text: str, language: str
+    ) -> list[TaskDraft]:
+        prompt: str = f"From the text, identify and list all tasks. For each task, include: Concise Title, Description, Estimated Duration, and 2-4 actionable Tips derived from the text. Respond in {language}."
 
         contents_parts: list[Part] = [
             Part(text=text),
             Part(text=prompt),
         ]
 
-        response: GenerateContentResponse = await self.client.aio.models.generate_content( #type: ignore[arg-type]
-            model="gemini-2.5-flash",
-            contents=contents_parts,
-            config={
-                "response_mime_type": "application/json",
-                "response_schema": list[TaskDraft],
-            },
+        response: GenerateContentResponse = (
+            await self.client.aio.models.generate_content(  # type: ignore[arg-type]
+                model="gemini-2.5-flash",
+                contents=contents_parts,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": list[TaskDraft],
+                },
+            )
         )
         if response.text is None:
             return []

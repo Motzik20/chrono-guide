@@ -93,7 +93,7 @@ class TestIngestText:
         assert len(data) == 2
         assert data[0]["title"] == "Test Task 1"
         mock_chrono_agent.analyze_tasks_from_text.assert_awaited_once_with(
-            "This is a test task description"
+            "This is a test task description", "en"
         )
 
     def test_ingest_text_empty_result(
@@ -108,7 +108,7 @@ class TestIngestText:
         assert response.status_code == 200
         assert response.json() == []
         mock_chrono_agent.analyze_tasks_from_text.assert_awaited_once_with(
-            "No tasks here"
+            "No tasks here", "en"
         )
 
 

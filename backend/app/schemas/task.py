@@ -87,6 +87,7 @@ class TaskDraft(BaseModel):
 class FileAnalysisRequest(BaseModel):
     file_content: bytes
     content_type: str
+    language: str
 
 
 class TextAnalysisRequest(BaseModel):

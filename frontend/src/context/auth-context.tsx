@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleUnauthorized = () => {
       setIsAuthenticated(false);
-      router.push("/login");
+      logout();
       toast.error("Session expired. Please login again.");
     };
 

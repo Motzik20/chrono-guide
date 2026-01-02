@@ -84,8 +84,8 @@ class SchedulerAvailability(WeeklyAvailabilityBase):
 
 class SchedulingConfig(BaseModel):
     max_scheduling_weeks: int = 12
-    min_block_minute: int = 30
     allow_splitting: bool = True
+    timezone: str = "UTC"
 
 
 class SchedulingRequest(BaseModel):
@@ -94,7 +94,6 @@ class SchedulingRequest(BaseModel):
     scheduler_availability: SchedulerAvailability
     config: SchedulingConfig
     start_time: dt.datetime
-    user_timezone: str
 
 
 class SchedulingResponse(BaseModel):
@@ -166,7 +165,7 @@ def schedule_tasks(
     tasks: list[Task],
     schedule_items: list[ScheduleItem],
     availability: WeeklyAvailability,
-    timezone: str,
+    config: SchedulingConfig,
 ) -> SchedulingResponse:
     """
     Pure scheduling function that takes pre-fetched data and returns schedule blocks.
@@ -195,9 +194,8 @@ def schedule_tasks(
         tasks=schedulable_tasks,
         busy_intervals=busy_intervals,
         scheduler_availability=scheduler_availability,
-        config=SchedulingConfig(),
+        config=config,
         start_time=start_time,
-        user_timezone=timezone,
     )
 
     return schedule(request)
@@ -221,7 +219,7 @@ def schedule(
         week_busy,
         request.scheduler_availability,
         request.start_time,
-        request.user_timezone,
+        request.config.timezone,
     )
     for _ in range(1, request.config.max_scheduling_weeks):
         week_start = week_end
@@ -232,7 +230,10 @@ def schedule(
             if week_start <= bi.start_time < week_end
         ]
         week_slots = get_available_time_slots(
-            week_busy, request.scheduler_availability, week_start, request.user_timezone
+            week_busy,
+            request.scheduler_availability,
+            week_start,
+            request.config.timezone,
         )
         available_slots.merge_slots(week_slots)
 

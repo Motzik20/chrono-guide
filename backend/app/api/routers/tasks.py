@@ -6,6 +6,7 @@ from sqlmodel import Session
 from app.core.auth import get_current_user_id
 from app.core.db import get_db
 from app.crud import task_crud
+from app.crud.setting_crud import get_user_setting
 from app.models.task import Task
 from app.schemas.task import (
     FileAnalysisRequest,
@@ -32,6 +33,7 @@ async def ingest_file(
     file: UploadFile = File(...),
     chrono_agent: ChronoAgent = Depends(get_chrono_agent),
     user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
 ) -> list[TaskDraft]:
     assert user_id
     allowed_content_types: list[str] = ["image/jpeg", "image/png", "application/pdf"]
@@ -41,8 +43,9 @@ async def ingest_file(
     if content_type not in allowed_content_types:
         raise HTTPException(status_code=400, detail="Invalid file content type")
     file_content: bytes = await file.read()
+    language: str = get_user_setting(user_id, "language", session).value
     file_request: FileAnalysisRequest = FileAnalysisRequest(
-        file_content=file_content, content_type=content_type
+        file_content=file_content, content_type=content_type, language=language
     )
     return await chrono_agent.analyze_tasks_from_file(file_request)
 
@@ -52,9 +55,11 @@ async def ingest_text(
     text_request: TextAnalysisRequest = Body(...),
     chrono_agent: ChronoAgent = Depends(get_chrono_agent),
     user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
 ) -> list[TaskDraft]:
     assert user_id
-    return await chrono_agent.analyze_tasks_from_text(text_request.text)
+    language: str = get_user_setting(user_id, "language", session).value
+    return await chrono_agent.analyze_tasks_from_text(text_request.text, language)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

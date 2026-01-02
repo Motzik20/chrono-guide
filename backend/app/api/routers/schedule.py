@@ -3,9 +3,10 @@ from sqlmodel import Session
 
 from app.core.auth import get_current_user_id
 from app.core.db import get_db
-from app.core.timezone import get_user_timezone, now_utc
+from app.core.timezone import now_utc
 from app.crud.availability_crud import get_user_availability
 from app.crud.schedule_item_crud import create_schedule_items, get_user_schedule_items
+from app.crud.setting_crud import get_schedule_config
 from app.crud.task_crud import (
     get_tasks_by_ids,
     get_unscheduled_tasks,
@@ -18,6 +19,7 @@ from app.schemas.schedule_item import ScheduleItemCreate
 from app.schemas.schedule_requests import ScheduleGenerateRequest
 from app.services.ical_service import export_calendar_from_schedule_items
 from app.services.scheduling_service import (
+    SchedulingConfig,
     SchedulingResponse,
     schedule_blocks_to_schedule_items,
     schedule_tasks,
@@ -56,14 +58,14 @@ async def generate_schedule(
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
 ) -> SchedulingResponse:
-    timezone: str = get_user_timezone(session, user_id)
     tasks: list[Task] = get_tasks_by_ids(
         generate_schedule_request.task_ids, user_id, session
     )
     schedule_items: list[ScheduleItem] = get_user_schedule_items(user_id, session)
     availability: WeeklyAvailability = get_user_availability(user_id, session)
+    schedule_config: SchedulingConfig = get_schedule_config(user_id, session)
     response: SchedulingResponse = schedule_tasks(
-        tasks, schedule_items, availability, timezone
+        tasks, schedule_items, availability, schedule_config
     )
     schedule_items_to_create: list[ScheduleItemCreate] = (
         schedule_blocks_to_schedule_items(response.schedule_blocks, user_id)
@@ -84,12 +86,12 @@ async def generate_schedule_all(
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
 ) -> SchedulingResponse:
-    timezone: str = get_user_timezone(session, user_id)
+    schedule_config: SchedulingConfig = get_schedule_config(user_id, session)
     tasks: list[Task] = get_unscheduled_tasks(user_id, session)
     schedule_items: list[ScheduleItem] = get_user_schedule_items(user_id, session)
     availability: WeeklyAvailability = get_user_availability(user_id, session)
     response: SchedulingResponse = schedule_tasks(
-        tasks, schedule_items, availability, timezone
+        tasks, schedule_items, availability, schedule_config
     )
     schedule_items_to_create: list[ScheduleItemCreate] = (
         schedule_blocks_to_schedule_items(response.schedule_blocks, user_id)
