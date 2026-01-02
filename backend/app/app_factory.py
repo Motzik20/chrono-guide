@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -13,9 +15,20 @@ def create_app(local: bool) -> FastAPI:
     init_db(local)
     app = FastAPI(title=APP_NAME, version=APP_VERSION)
 
+    cors_origins_env = os.getenv(
+        "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000" if local else ""
+    )
+
+    allowed_origins = [
+        origin.strip() for origin in cors_origins_env.split(",") if origin.strip()
+    ]
+
+    if not allowed_origins and not local:
+        allowed_origins = []
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

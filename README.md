@@ -34,13 +34,19 @@ An intelligent task scheduling system that uses AI to extract tasks from content
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
    JWT_SECRET_KEY=your_secret_key_here
-   DATABASE_URL=postgresql+psycopg://chrono:chrono@db:5432/chrono
+   # CORS_ORIGINS is optional
+   CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
    ```
+   
+   **Note**: 
+   - `CORS_ORIGINS` is optional - defaults to http://localhost:3000,http://127.0.0.1:3000 for dev. For production or different ports, specify: CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+   - `DATABASE_URL` is automatically set by Docker Compose. You only need to set it in `.env` if running the backend locally (outside Docker).
 
 3. **Start development environment**
    ```bash
    docker-compose --profile dev up --build
    ```
+   *Note: Database migrations run automatically on startup.*
 
 4. **Access the application**
    - Frontend: http://localhost:3000
@@ -69,12 +75,12 @@ pnpm dev
 
 ```bash
 # Development
-docker-compose --profile dev up
+docker-compose --profile dev up --build
 
 # Production
 NEXT_PUBLIC_API_URL=http://localhost:8000 docker-compose --profile prod up --build
 
-# Database migrations
+# Database migrations (Automatically runs on startup, but can be run manually)
 docker-compose exec api-dev poetry run alembic upgrade head
 ```
 
@@ -90,6 +96,7 @@ chrono-guide/
 │   │   ├── models/   # Database models
 │   │   ├── schemas/  # Pydantic schemas
 │   │   └── services/ # Business logic
+│   ├── scripts/      # Startup and utility scripts
 │   └── tests/        # Test suite
 ├── frontend/          # Next.js frontend
 │   └── src/
@@ -103,8 +110,16 @@ chrono-guide/
 
 ### Backend (`backend/.env`)
 - `GEMINI_API_KEY` - Google Gemini API key (required)
-- `SECRET_KEY` - JWT secret key (required)
-- `DATABASE_URL` - PostgreSQL connection string (required)
+- `JWT_SECRET_KEY` - JWT secret key (required)
+- `CORS_ORIGINS` - Comma-separated list of allowed frontend origins (optional, defaults to `http://localhost:3000,http://127.0.0.1:3000` for dev)
+- `DATABASE_URL` - PostgreSQL connection string (optional in Docker, required for local development)
+
+**Note**: When using Docker Compose, `DATABASE_URL` is automatically configured. You can also override it by setting individual PostgreSQL variables:
+- `POSTGRES_USER` (default: `chrono`)
+- `POSTGRES_PASSWORD` (default: `chrono`)
+- `POSTGRES_HOST` (default: `localhost` for local, `db` for Docker)
+- `POSTGRES_PORT` (default: `5432`)
+- `POSTGRES_DB` (default: `chrono`)
 
 ### Frontend (`frontend/.env.local`)
 - `NEXT_PUBLIC_API_URL` - Backend API URL (default: `http://localhost:8000`)
