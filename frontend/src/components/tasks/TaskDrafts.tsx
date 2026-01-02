@@ -116,7 +116,7 @@ export default function TaskDrafts() {
       <TaskList
         tasks={drafts}
         title="Task Drafts"
-        description="Task drafts will appear here after ingestion"
+        description={`${drafts.length} ${drafts.length === 1 ? "task draft" : "task drafts"} found`}
         emptyStateTitle="No task drafts found"
         emptyStateDescription="Task drafts will appear here after ingestion"
         actionButtons={[
