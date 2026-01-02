@@ -1,69 +1,134 @@
 # Chrono Guide
 
-**Chrono Guide** is an intelligent task scheduling system that uses AI to extract tasks from various content sources and automatically schedule them into your calendar based on your availability and preferences.
+An intelligent task scheduling system that uses AI to extract tasks from content sources and automatically schedule them based on your availability.
 
-## What It Does
+## Features
 
-Chrono Guide is designed to solve the problem of task management and scheduling by:
+- **AI Task Extraction**: Extract tasks from images, PDFs, and text using Google Gemini
+- **Intelligent Scheduling**: Automatically schedule tasks based on availability, priorities, and deadlines
+- **Task Management**: Full CRUD operations with priorities, deadlines, and duration estimates
+- **Calendar Export**: Export scheduled tasks as iCalendar files
 
-1. **Smart Task Extraction**: Uses AI to automatically extract tasks from:
-   - Images (via OCR and visual analysis)
-   - PDF documents
-   - Text content
-   - Handwritten notes
+## Tech Stack
 
-2. **Intelligent Scheduling**: Automatically schedules extracted tasks by:
-   - Analyzing your weekly availability patterns
-   - Considering task priorities and deadlines
-   - Optimizing for time efficiency
-   - Splitting large tasks across multiple time slots when needed
+- **Backend**: FastAPI, PostgreSQL, SQLModel, Google Gemini AI
+- **Frontend**: Next.js 15, TypeScript, Tailwind CSS, Radix UI
+- **Infrastructure**: Docker, Docker Compose
 
-3. **Calendar Integration**: Seamlessly integrates with your existing calendar system to avoid conflicts and maintain a unified schedule.
+## Prerequisites
 
-## 🏗️ Architecture
+- Docker & Docker Compose
+- Git
 
-### Backend (FastAPI + PostgreSQL)
-- **Task Management**: Create, update, and manage tasks with priorities, deadlines, and duration estimates
-- **Availability Management**: Set and manage your weekly availability windows
-- **Scheduling Engine**: Advanced algorithm that optimally places tasks in available time slots
-- **AI Integration**: Google Gemini integration for content analysis and task extraction
-- **Calendar Sync**: Integration with external calendar providers
+## Quick Start
 
-### Key Features
-- **Priority-based Scheduling**: Tasks are ranked by deadline urgency, priority level, and duration
-- **Task Splitting**: Large tasks can be automatically split across multiple time slots
-- **Conflict Resolution**: Intelligent handling of busy periods and availability constraints
-- **Multi-week Planning**: Schedule tasks up to 12 weeks in advance
-- **Real-time Updates**: Hot-reload development environment with Docker Compose
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd chrono-guide
+   ```
 
-## 🚀 Getting Started
-TODO
+2. **Set up backend environment**
+   
+   Create `backend/.env`:
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key_here
+   SECRET_KEY=your_secret_key_here
+   DATABASE_URL=postgresql+psycopg://chrono:chrono@db:5432/chrono
+   ```
 
-## 📋 Current Status
+3. **Start development environment**
+   ```bash
+   docker-compose --profile dev up --build
+   ```
 
-### ✅ Completed
-- Database schema with PostgreSQL
-- Task and availability models
-- Core scheduling algorithm
-- Basic API structure
-- Comprehensive test suite
-- Docker development environment
+4. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Docs: http://localhost:8000/docs
 
-### 🔄 In Progress
-- API endpoint implementation
-- AI content processing
+## Local Development
 
-### 📅 Planned
-- Frontend interface
-- Calendar integration
-- Advanced scheduling features
-- Proper Authentication
-- Team collaboration features
+### Backend
+```bash
+cd backend
+poetry install
+poetry run alembic upgrade head
+poetry run uvicorn app.main:app --reload
+```
 
-## 📄 License
+### Frontend
+```bash
+cd frontend
+pnpm install
+# Create .env.local with NEXT_PUBLIC_API_URL=http://localhost:8000
+pnpm dev
+```
+
+## Docker Commands
+
+```bash
+# Development
+docker-compose --profile dev up
+
+# Production
+NEXT_PUBLIC_API_URL=http://localhost:8000 docker-compose --profile prod up --build
+
+# Database migrations
+docker-compose exec api-dev poetry run alembic upgrade head
+```
+
+## Project Structure
+
+```
+chrono-guide/
+├── backend/          # FastAPI backend
+│   ├── app/
+│   │   ├── api/      # API routes
+│   │   ├── core/     # Config, auth, db
+│   │   ├── crud/     # Database operations
+│   │   ├── models/   # Database models
+│   │   ├── schemas/  # Pydantic schemas
+│   │   └── services/ # Business logic
+│   └── tests/        # Test suite
+├── frontend/          # Next.js frontend
+│   └── src/
+│       ├── app/      # Next.js pages
+│       ├── components/
+│       └── lib/      # Utilities
+└── docker-compose.yml
+```
+
+## Environment Variables
+
+### Backend (`backend/.env`)
+- `GEMINI_API_KEY` - Google Gemini API key (required)
+- `SECRET_KEY` - JWT secret key (required)
+- `DATABASE_URL` - PostgreSQL connection string (required)
+
+### Frontend (`frontend/.env.local`)
+- `NEXT_PUBLIC_API_URL` - Backend API URL (default: `http://localhost:8000`)
+
+## Testing
+
+```bash
+# Backend tests
+docker-compose exec api-dev poetry run pytest
+
+# With coverage
+docker-compose exec api-dev poetry run pytest --cov=app
+```
+
+## Database Migrations
+
+```bash
+# Create migration
+docker-compose exec api-dev poetry run alembic revision --autogenerate -m "description"
+
+# Apply migrations
+docker-compose exec api-dev poetry run alembic upgrade head
+```
+
+## License
 
 Private project - All rights reserved.
-
----
-
-**Chrono Guide** - Making task management and scheduling effortless through AI-powered automation.
