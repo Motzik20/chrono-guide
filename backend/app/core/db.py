@@ -16,7 +16,9 @@ def init_db(local: bool) -> None:
         _database = create_local_db_engine()
     else:
         _database = create_db_engine()
-    _session_maker = sessionmaker(class_=Session, autocommit=False, autoflush=False, bind=_database)
+    _session_maker = sessionmaker(
+        class_=Session, autocommit=False, autoflush=False, bind=_database
+    )
 
 
 def create_local_db_engine() -> Engine:
@@ -38,6 +40,7 @@ def create_db_engine() -> Engine:
     if url is None:
         raise ValueError("DATABASE_URL is not set")
     return create_engine(url)
+
 
 def _get_session() -> Generator[Session, None, None]:
     assert _session_maker

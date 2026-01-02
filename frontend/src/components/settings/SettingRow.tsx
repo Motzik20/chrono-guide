@@ -77,7 +77,7 @@ export function SettingRow({ setting, onSettingUpdated }: SettingRowProps) {
         setIsUpdating(false);
       }
     },
-    [setting.key, onSettingUpdated]
+    [setting.key, onSettingUpdated, setting.type]
   );
 
   // Format key to a human-readable label

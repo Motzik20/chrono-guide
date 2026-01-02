@@ -80,8 +80,8 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenuButton onClick={handleLogout}>
-            <LogOut />
-            Logout
+          <LogOut />
+          Logout
         </SidebarMenuButton>
       </SidebarFooter>
     </Sidebar>

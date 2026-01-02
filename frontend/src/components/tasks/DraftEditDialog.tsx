@@ -126,11 +126,6 @@ export function DraftEditDialog({
     setDialogOpen(false);
   };
 
-  const handleClearDeadline = () => {
-    setDate(undefined);
-    setTime("10:30");
-  };
-
   const currentYear = new Date().getFullYear();
 
   return (

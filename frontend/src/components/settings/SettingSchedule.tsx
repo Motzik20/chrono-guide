@@ -285,11 +285,14 @@ function TimeWindow({
   index: number;
   onRemove: () => void;
 }) {
+  const dayKey = activeTab as keyof ScheduleForm;
+  const fieldName = `${dayKey}.${index}.start` as const;
+  const endFieldName = `${dayKey}.${index}.end` as const;
   return (
     <div className="flex gap-4 items-start">
       <FormField
         control={form.control}
-        name={`${activeTab}.${index}.start` as any}
+        name={fieldName}
         render={({ field }) => (
           <FormItem className="flex-1 flex flex-col">
             <FormLabel>Start-Time</FormLabel>
@@ -307,7 +310,7 @@ function TimeWindow({
       />
       <FormField
         control={form.control}
-        name={`${activeTab}.${index}.end` as any}
+        name={endFieldName}
         render={({ field }) => (
           <FormItem className="flex-1 flex flex-col">
             <FormLabel>End-Time</FormLabel>
