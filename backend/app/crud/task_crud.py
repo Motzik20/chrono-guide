@@ -2,6 +2,7 @@ import datetime as dt
 
 from sqlmodel import Session, select
 
+from app.core.exceptions import NotFoundError
 from app.models.task import Task
 from app.schemas.task import TaskCreate, TasksDelete
 
@@ -60,7 +61,9 @@ def update_tasks_scheduled_at(
     for task_id in task_scheduled:
         task = session.exec(
             select(Task).where(Task.id == task_id).where(Task.user_id == user_id)
-        ).one()
+        ).one_or_none()
+        if not task:
+            raise NotFoundError(f"Task with id {task_id} not found")
         task.scheduled_at = scheduled_at
         session.add(task)
     session.flush()
@@ -91,7 +94,9 @@ def create_tasks(tasks: list[TaskCreate], user_id: int, session: Session) -> lis
 def delete_task(task_id: int, user_id: int, session: Session) -> None:
     task = session.exec(
         select(Task).where(Task.id == task_id).where(Task.user_id == user_id)
-    ).one()
+    ).one_or_none()
+    if not task:
+        raise NotFoundError(f"Task with id {task_id} not found")
     session.delete(task)
     session.flush()
 
@@ -100,6 +105,8 @@ def delete_tasks(tasks_delete: TasksDelete, user_id: int, session: Session) -> N
     for task_id in tasks_delete.task_ids:
         task = session.exec(
             select(Task).where(Task.id == task_id).where(Task.user_id == user_id)
-        ).one()
+        ).one_or_none()
+        if not task:
+            raise NotFoundError(f"Task with id {task_id} not found")
         session.delete(task)
     session.flush()
