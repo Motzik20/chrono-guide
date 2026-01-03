@@ -1,8 +1,14 @@
 import { z, ZodSafeParseResult } from "zod";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!BASE_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL is not set");
+function getBaseUrl(): string {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!baseUrl) {
+    throw new Error(
+      "NEXT_PUBLIC_API_URL is not set. Please set it in your .env.local file or environment variables."
+    );
+  }
+  return baseUrl;
 }
 
 const globalErrorHandlers: Partial<Record<number, () => void>> = {
@@ -34,8 +40,8 @@ export async function apiDownloadRequest(
   options: RequestInit = {}
 ): Promise<void> {
   const headers = buildHeaders(options);
-
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
+  const baseUrl = getBaseUrl();
+  const response = await fetch(`${getBaseUrl()}${endpoint}`, {
     ...options,
     headers,
     credentials: "include",
@@ -86,13 +92,13 @@ export async function apiRequest<T>(
   customErrorHandlers?: Partial<Record<number, () => void>>
 ): Promise<T> {
   const isFormData = options.body instanceof FormData;
-
+  const baseUrl = getBaseUrl();
   const headers = buildHeaders(options);
 
   if (!isFormData && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
+  const response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers,
     credentials: "include",
