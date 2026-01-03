@@ -41,7 +41,7 @@ export async function apiDownloadRequest(
 ): Promise<void> {
   const headers = buildHeaders(options);
   const baseUrl = getBaseUrl();
-  const response = await fetch(`${getBaseUrl()}${endpoint}`, {
+  const response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers,
     credentials: "include",
