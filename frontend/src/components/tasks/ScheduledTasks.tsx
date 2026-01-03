@@ -39,11 +39,7 @@ export default function ScheduledTasks() {
         await fetchTasks();
         refreshScheduleItems();
       } catch (error) {
-        if (error instanceof ApiError) {
-          toast.error(`Failed to mark tasks as completed: ${error.message}`);
-        } else {
-          toast.error("Failed to mark tasks as completed. Please try again.");
-        }
+        toast.error("Failed to mark tasks as completed. Please try again.");
       }
     },
     [scheduledTasks, fetchTasks, refreshScheduleItems]

@@ -51,6 +51,7 @@ export async function apiDownloadRequest(
     const status: number = response.status;
     if (globalErrorHandlers[status]) {
       globalErrorHandlers[status]();
+      return;
     }
     const errorText = await response.text();
     let errorJson;
