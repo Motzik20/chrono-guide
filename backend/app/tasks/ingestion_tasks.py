@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 from celery import Task
@@ -32,7 +33,12 @@ def ingest_file(
     session = next(session_gen)
 
     try:
-        # Decode base64 content
+        # File should be available due to fsync in save_upload and countdown delay
+        # But check existence as a safety measure
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File {file_path} not found")
+
+        # Read file content
         with open(file_path, "rb") as file:
             file_content = file.read()
 
@@ -72,12 +78,14 @@ def ingest_file(
                 created_count=0,
             ).model_dump()
 
-    except ValueError as exc:
+    except (ValueError, FileNotFoundError) as exc:
         session.rollback()
         raise self.retry(exc=exc, countdown=5)
     finally:
         session.close()
-        storage.delete(file_path)
+        # Only delete if file exists
+        if os.path.exists(file_path):
+            storage.delete(file_path)
 
 
 @celery_app.task(bind=True, max_retries=3)

@@ -16,7 +16,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { apiRequest } from "@/lib/chrono-client";
+import { useJobManager } from "@/context/job-context";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,82 +47,15 @@ const textSchema = z.object({
     .max(10000, "Text must be less than 10000 characters"),
 });
 
-const jobResponseSchema = z.object({
-  job_id: z.string(),
-  status: z.string().optional(),
-});
-
-const jobStatusSchema = z.object({
-  id: z.string(),
-  status: z.enum(["pending", "running", "success", "failed"]),
-  result: z
-    .object({
-      draft_ids: z.array(z.number()),
-      created_count: z.number(),
-    })
-    .nullable()
-    .optional(),
-  error: z.string().nullable().optional(),
-});
-
 export default function IngestionInput() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"file" | "text">("file");
-
-  async function pollJobStatus(
-    jobId: string
-  ): Promise<z.infer<typeof jobStatusSchema>> {
-    const maxAttempts = 60; // 60 attempts = ~5 minutes max (5 second intervals)
-    let attempts = 0;
-
-    while (attempts < maxAttempts) {
-      const status = await apiRequest(`/tasks/jobs/${jobId}`, jobStatusSchema, {
-        method: "GET",
-      });
-
-      if (status.status === "success" || status.status === "failed") {
-        return status;
-      }
-
-      // Wait 2 seconds before next poll
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      attempts++;
-    }
-
-    throw new Error("Job polling timeout");
-  }
+  const { addJob } = useJobManager();
 
   async function onFileSubmit(values: z.infer<typeof fileSchema>) {
     setIsLoading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", values.file);
-      const jobResponse = await apiRequest(
-        "/tasks/ingest/file",
-        jobResponseSchema,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      // Poll for job completion
-      const jobStatus = await pollJobStatus(jobResponse.job_id);
-
-      if (jobStatus.status === "failed") {
-        toast.error(jobStatus.error || "Failed to ingest file");
-        return;
-      }
-
-      if (jobStatus.status === "success" && jobStatus.result) {
-        const createdCount = jobStatus.result.created_count;
-        toast.success(
-          `Successfully created ${createdCount} draft task${createdCount === 1 ? "" : "s"}`
-        );
-        window.location.reload();
-      } else {
-        toast.error("Job completed but no tasks were created");
-      }
+      await addJob(values.file);
     } catch (error) {
       console.error("File ingestion failed:", error);
       toast.error("Failed to ingest file");
@@ -132,17 +65,10 @@ export default function IngestionInput() {
   }
 
   async function onTextSubmit(values: z.infer<typeof textSchema>) {
-    setIsLoading(true);
+    /*     setIsLoading(true);
     try {
       const body = JSON.stringify(values);
-      const jobResponse = await apiRequest(
-        "/tasks/ingest/text",
-        jobResponseSchema,
-        {
-          method: "POST",
-          body: body,
-        }
-      );
+      //addJob(body);//
 
       // Poll for job completion
       const jobStatus = await pollJobStatus(jobResponse.job_id);
@@ -166,7 +92,7 @@ export default function IngestionInput() {
       toast.error("Failed to ingest text");
     } finally {
       setIsLoading(false);
-    }
+    } */
   }
 
   return (

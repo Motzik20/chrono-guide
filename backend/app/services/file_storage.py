@@ -19,6 +19,8 @@ class FileStorage:
 
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+            buffer.flush()
+            os.fsync(buffer.fileno())
 
         return str(file_path)
 
