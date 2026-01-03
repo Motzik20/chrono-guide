@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { DraftEditDialog } from "./DraftEditDialog";
@@ -9,7 +8,6 @@ import { toast } from "sonner";
 import { Pencil } from "lucide-react";
 import TaskList from "./TaskList";
 import { useTaskList } from "@/hooks/useTaskLists";
-import { useJobManager } from "@/context/job-context";
 
 const commitResponseSchema = z.object({
   task_ids: z.array(z.number()),
@@ -78,7 +76,7 @@ export default function TaskDrafts() {
       });
       toast.success("Drafts deleted successfully");
       await fetchTasks();
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete drafts");
     }
   };

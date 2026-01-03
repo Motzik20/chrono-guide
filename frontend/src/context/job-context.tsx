@@ -7,6 +7,7 @@ import {
   useEffect,
   useContext,
   useCallback,
+  useRef,
 } from "react";
 import { z } from "zod";
 import { apiRequest } from "@/lib/chrono-client";
@@ -29,77 +30,90 @@ const jobStatusSchema = z.object({
   error: z.string().nullable().optional(),
 });
 
-const trackedJobSchema = z.object({
-  id: z.string(),
-  filename: z.string(),
-  status: z.enum(["pending", "running", "success", "failed"]),
-  result: z
-    .object({
-      draft_ids: z.array(z.number()),
-      created_count: z.number(),
-    })
-    .nullable()
-    .optional(),
-  error: z.string().nullable().optional(),
-  created_at: z.number(),
-});
-
-type TrackedJob = z.infer<typeof trackedJobSchema>;
+type TrackedJob = {
+  id: string;
+  filename: string;
+  status: "pending" | "running" | "success" | "failed";
+  result?: {
+    draft_ids: number[];
+    created_count: number;
+  } | null;
+  error?: string | null;
+  created_at?: number;
+};
 
 interface JobContextType {
   jobs: TrackedJob[];
   addJob: (file: File) => Promise<void>;
+  addTextJob: (text: string) => Promise<void>;
   dismissJob: (jobId: string) => void;
 }
 export const JobContext = createContext<JobContextType | undefined>(undefined);
 
 export function JobProvider({ children }: { children: React.ReactNode }) {
-  const [jobs, setJobs] = useState<TrackedJob[]>(() => {
-    try {
-      const storedJobs = localStorage.getItem("background-jobs");
-      return storedJobs ? JSON.parse(storedJobs) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [jobs, setJobs] = useState<TrackedJob[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const toastShownRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    localStorage.setItem("background-jobs", JSON.stringify(jobs));
-  }, [jobs]);
+    const storedJobs = localStorage.getItem("background-jobs");
+    if (storedJobs) {
+      setJobs(JSON.parse(storedJobs));
+    }
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem("background-jobs", JSON.stringify(jobs));
+    }
+  }, [jobs, isHydrated]);
 
   const dismissJob = useCallback((jobId: string) => {
     setJobs((prevJobs) => prevJobs.filter((job) => job.id !== jobId));
+    // Clean up toast tracking when job is dismissed
+    toastShownRef.current.delete(jobId);
   }, []);
 
-  const updateJobStatus = (
-    job: TrackedJob,
-    jobStatus: z.infer<typeof jobStatusSchema>
-  ) => {
-    if (jobStatus.status !== job.status) {
-      setJobs((prevJobs) => {
-        let updatedJobs = prevJobs.map((j) =>
-          j.id === job.id
-            ? {
-                ...j,
-                status: jobStatus.status,
-                result: jobStatus.result,
-                error: jobStatus.error,
-              }
-            : j
-        );
+  const updateJobStatus = useCallback(
+    (job: TrackedJob, jobStatus: z.infer<typeof jobStatusSchema>) => {
+      if (jobStatus.status !== job.status) {
+        const toastKey = `${job.id}-${jobStatus.status}`;
+        const hasShownToast = toastShownRef.current.has(toastKey);
 
-        if (jobStatus.status === "success" && jobStatus.result) {
-          toast.success(
-            `Successfully created ${jobStatus.result.created_count} draft task${jobStatus.result.created_count === 1 ? "" : "s"}`
+        setJobs((prevJobs) => {
+          return prevJobs.map((j) =>
+            j.id === job.id
+              ? {
+                  ...j,
+                  status: jobStatus.status,
+                  result: jobStatus.result,
+                  error: jobStatus.error,
+                }
+              : j
           );
-        } else if (jobStatus.status === "failed") {
-          toast.error(jobStatus.error || "Job failed");
-        }
+        });
 
-        return updatedJobs;
-      });
-    }
-  };
+        // Show toast only once per status transition
+        if (!hasShownToast) {
+          toastShownRef.current.add(toastKey);
+
+          if (jobStatus.status === "success" && jobStatus.result) {
+            if (jobStatus.result.created_count > 0) {
+              toast.success(
+                `Successfully created ${jobStatus.result.created_count} draft task${jobStatus.result.created_count === 1 ? "" : "s"}`
+              );
+            } else {
+              toast.info("No drafts created");
+            }
+          } else if (jobStatus.status === "failed") {
+            toast.error(jobStatus.error || "Job failed");
+          }
+        }
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     const activeJobs = jobs.filter(
@@ -133,7 +147,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     }, 2000);
 
     return () => clearInterval(intervalCheck);
-  }, [jobs]);
+  }, [jobs, updateJobStatus]);
 
   const addJob = async (file: File) => {
     const formData = new FormData();
@@ -162,8 +176,33 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addTextJob = async (text: string) => {
+    try {
+      const jobResponse = await apiRequest(
+        "/tasks/ingest/text",
+        jobResponseSchema,
+        {
+          method: "POST",
+          body: JSON.stringify({ text }),
+        }
+      );
+
+      const newJob: TrackedJob = {
+        id: jobResponse.job_id,
+        filename: "Text Input",
+        status: "pending",
+        created_at: Date.now(),
+      };
+      // No toast - the persistent notification bar will show the job status
+      setJobs([...jobs, newJob]);
+    } catch (error) {
+      console.error("Failed to add text job:", error);
+      throw error;
+    }
+  };
+
   return (
-    <JobContext.Provider value={{ jobs, addJob, dismissJob }}>
+    <JobContext.Provider value={{ jobs, addJob, addTextJob, dismissJob }}>
       {children}
     </JobContext.Provider>
   );

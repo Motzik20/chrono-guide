@@ -50,7 +50,7 @@ const textSchema = z.object({
 export default function IngestionInput() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"file" | "text">("file");
-  const { addJob } = useJobManager();
+  const { addJob, addTextJob } = useJobManager();
 
   async function onFileSubmit(values: z.infer<typeof fileSchema>) {
     setIsLoading(true);
@@ -65,34 +65,15 @@ export default function IngestionInput() {
   }
 
   async function onTextSubmit(values: z.infer<typeof textSchema>) {
-    /*     setIsLoading(true);
+    setIsLoading(true);
     try {
-      const body = JSON.stringify(values);
-      //addJob(body);//
-
-      // Poll for job completion
-      const jobStatus = await pollJobStatus(jobResponse.job_id);
-
-      if (jobStatus.status === "failed") {
-        toast.error(jobStatus.error || "Failed to ingest text");
-        return;
-      }
-
-      if (jobStatus.status === "success" && jobStatus.result) {
-        const createdCount = jobStatus.result.created_count;
-        toast.success(
-          `Successfully created ${createdCount} draft task${createdCount === 1 ? "" : "s"}`
-        );
-        window.location.reload();
-      } else {
-        toast.error("Job completed but no tasks were created");
-      }
+      await addTextJob(values.text);
     } catch (error) {
       console.error("Text ingestion failed:", error);
       toast.error("Failed to ingest text");
     } finally {
       setIsLoading(false);
-    } */
+    }
   }
 
   return (
