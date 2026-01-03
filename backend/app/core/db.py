@@ -54,13 +54,13 @@ def _get_session() -> Generator[Session, None, None]:
             try:
                 session.rollback()
             except Exception:
-                pass
+                raise SystemError("Failed to rollback session")
         raise
     finally:
         try:
             session.close()
         except Exception:
-            pass
+            raise SystemError("Failed to close session")
 
 
 def get_db() -> Generator[Session, None, None]:
