@@ -16,6 +16,7 @@ from app.schemas.task import (
     TaskRead,
     TasksCreateResponse,
     TasksDelete,
+    TaskUpdate,
     TextAnalysisRequest,
 )
 from app.services.llm.gemini_agent import GeminiAgent
@@ -131,3 +132,39 @@ async def delete_tasks(
     session: Session = Depends(get_db),
 ) -> None:
     task_crud.delete_tasks(TasksDelete(task_ids=task_ids), user_id, session)
+
+
+@router.get("/drafts", status_code=status.HTTP_200_OK)
+async def get_drafts(
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+) -> list[TaskRead]:
+    return [
+        TaskRead.model_validate(task) for task in task_crud.get_drafts(user_id, session)
+    ]
+
+
+@router.post("/drafts/commit", status_code=status.HTTP_200_OK)
+async def commit_drafts(
+    task_ids: list[int] = Body(...),
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+) -> TasksCreateResponse:
+    tasks = task_crud.commit_drafts(task_ids, user_id, session)
+    session.commit()
+    return TasksCreateResponse(
+        task_ids=[t.id for t in tasks if t.id],
+        created_count=len(tasks),
+    )
+
+
+@router.put("/{task_id}", status_code=status.HTTP_200_OK)
+async def update_task(
+    task_id: int,
+    task_update: TaskUpdate = Body(...),
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+) -> TaskRead:
+    updated_task = task_crud.update_task(task_id, task_update, user_id, session)
+    session.commit()
+    return TaskRead.model_validate(updated_task)

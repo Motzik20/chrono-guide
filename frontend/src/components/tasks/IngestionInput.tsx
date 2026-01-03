@@ -25,11 +25,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { FileText, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { useTaskDrafts } from "@/context/task-drafts-context";
-import { TaskDraft } from "@/lib/task-types";
+import { toast } from "sonner";
 
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const fileSchema = z.object({
   file: z
@@ -48,19 +47,18 @@ const textSchema = z.object({
     .max(10000, "Text must be less than 10000 characters"),
 });
 
-const taskDraft = z.object({
+const taskDraftSchema = z.object({
   title: z.string(),
   description: z.string(),
-  expected_duration_minutes: z.number().min(1),
+  expected_duration_minutes: z.number(),
   tips: z.array(z.string()),
-  priority: z.number().min(0).max(4).optional(),
-  deadline: z.iso.datetime().optional().nullable(),
+  priority: z.number().optional(),
+  deadline: z.string().nullable().optional(),
 });
 
-const taskDrafts = z.array(taskDraft);
+const taskDraftsSchema = z.array(taskDraftSchema);
 
 export default function IngestionInput() {
-  const { addDrafts } = useTaskDrafts();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"file" | "text">("file");
 
@@ -69,18 +67,39 @@ export default function IngestionInput() {
     try {
       const formData = new FormData();
       formData.append("file", values.file);
-      const response: TaskDraft[] = await apiRequest(
-        "/tasks/ingest/file",
-        taskDrafts,
+      const drafts = await apiRequest("/tasks/ingest/file", taskDraftsSchema, {
+        method: "POST",
+        body: formData,
+      });
+
+      const tasksToCreate = drafts.map((draft) => ({
+        title: draft.title,
+        description: draft.description,
+        expected_duration_minutes: draft.expected_duration_minutes,
+        priority: draft.priority ?? 2,
+        deadline: draft.deadline,
+        tips: draft.tips,
+      }));
+
+      await apiRequest(
+        "/tasks/bulk",
+        z.object({
+          task_ids: z.array(z.number()),
+          created_count: z.number(),
+        }),
         {
           method: "POST",
-          body: formData,
+          body: JSON.stringify(tasksToCreate),
         }
       );
-      console.log("File ingestion response:", response);
-      addDrafts(response);
+
+      toast.success(
+        `Successfully created ${drafts.length} draft task${drafts.length === 1 ? "" : "s"}`
+      );
+      window.location.reload();
     } catch (error) {
       console.error("File ingestion failed:", error);
+      toast.error("Failed to ingest file");
     } finally {
       setIsLoading(false);
     }
@@ -90,19 +109,39 @@ export default function IngestionInput() {
     setIsLoading(true);
     try {
       const body = JSON.stringify(values);
-      console.log("Text ingestion body:", body);
-      const response: TaskDraft[] = await apiRequest(
-        "/tasks/ingest/text",
-        taskDrafts,
+      const drafts = await apiRequest("/tasks/ingest/text", taskDraftsSchema, {
+        method: "POST",
+        body: body,
+      });
+
+      const tasksToCreate = drafts.map((draft) => ({
+        title: draft.title,
+        description: draft.description,
+        expected_duration_minutes: draft.expected_duration_minutes,
+        priority: draft.priority ?? 2,
+        deadline: draft.deadline,
+        tips: draft.tips,
+      }));
+
+      await apiRequest(
+        "/tasks/bulk",
+        z.object({
+          task_ids: z.array(z.number()),
+          created_count: z.number(),
+        }),
         {
           method: "POST",
-          body: body,
+          body: JSON.stringify(tasksToCreate),
         }
       );
-      console.log("Text ingestion response:", response);
-      addDrafts(response);
+
+      toast.success(
+        `Successfully created ${drafts.length} draft task${drafts.length === 1 ? "" : "s"}`
+      );
+      window.location.reload();
     } catch (error) {
       console.error("Text ingestion failed:", error);
+      toast.error("Failed to ingest text");
     } finally {
       setIsLoading(false);
     }
@@ -277,7 +316,7 @@ function FileInput({
               <Spinner /> Analyzing...
             </div>
           ) : (
-            "Analyze Text"
+            "Analyze File"
           )}
         </Button>
       </form>

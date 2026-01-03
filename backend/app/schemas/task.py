@@ -54,6 +54,7 @@ class TaskRead(BaseModel):
     updated_at: dt.datetime
     scheduled_at: dt.datetime | None = None
     completed_at: dt.datetime | None = None
+    committed_at: dt.datetime | None = None
 
     @field_validator("tips", mode="before")
     @classmethod

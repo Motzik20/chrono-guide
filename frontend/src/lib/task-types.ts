@@ -19,6 +19,7 @@ export const TaskResponseSchema = TaskBaseSchema.extend({
   updated_at: z.string(),
   scheduled_at: z.string().nullable().optional(),
   completed_at: z.string().nullable().optional(),
+  committed_at: z.string().nullable().optional(),
 });
 
 export type Task = z.infer<typeof TaskResponseSchema>;
