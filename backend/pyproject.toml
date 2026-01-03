@@ -40,6 +40,7 @@ coverage = ">=7.4.3,<8.0.0"
 # --- The sections below are copied directly ---
 pytest-cov = "^6.2.1"
 hypothesis = "^6.138.13"
+flower = "^2.0.1"
 
 [build-system]
 # This section is updated to use Poetry as the build backend

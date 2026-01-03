@@ -8,6 +8,7 @@ celery_app = Celery(
     "chrono_guide",
     broker=redis_url,
     backend=redis_url,
+    include=["app.tasks.ingestion_tasks"],
 )
 
 celery_app.conf.update(

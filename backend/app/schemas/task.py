@@ -103,3 +103,13 @@ class TasksCreateResponse(BaseModel):
 class TaskCreateResponse(BaseModel):
     task_id: int
     created: bool
+
+
+class IngestTaskResponse(BaseModel):
+    draft_ids: list[int]
+    created_count: int
+
+
+class JobResponse(BaseModel):
+    job_id: str
+    status: str = "processing"

@@ -1,21 +1,5 @@
 version: "3.9"
 
-# 1. Define reusable blocks (Extension Fields)
-x-backend-base: &backend-base
-  build:
-    context: ./backend
-    # Target will be overridden
-  env_file:
-    - ./backend/.env
-  environment: &backend-env
-    DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD:-chrono}@db:5432/${POSTGRES_DB:-chrono}
-    REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-  depends_on: &backend-depends
-    db:
-      condition: service_healthy
-    redis:
-      condition: service_healthy
-
 services:
   db:
     image: postgres:16-alpine
@@ -44,136 +28,54 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
-    profiles:
-      - dev
-      - prod
 
-  # --- API SERVICES ---
-
-  api-dev:
-    <<: *backend-base # Merge in the base config
+  api:
     build:
       context: ./backend
-      target: dev
-    working_dir: /backend
-    # Kept your shell wrapper, but ensure start.sh handles args correctly!
-    command:
-      [
-        "/bin/bash",
-        "./scripts/start.sh",
-        "uvicorn",
-        "app.main:app",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8000",
-        "--reload",
-      ]
+    env_file:
+      - ./backend/.env
     environment:
-      <<: *backend-env
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
-    volumes:
-      - ./backend/app:/backend/app
-      - ./backend/alembic.ini:/backend/alembic.ini
-      - ./backend/app/alembic:/backend/app/alembic
-      - ./backend/pyproject.toml:/backend/pyproject.toml
-      - ./backend/poetry.lock:/backend/poetry.lock
-      - ./backend/scripts:/backend/scripts
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD:-chrono}@db:5432/${POSTGRES_DB:-chrono}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    working_dir: /backend
     ports:
       - "8000:8000"
-    profiles:
-      - dev
-
-  api-prod:
-    <<: *backend-base
-    build:
-      context: ./backend
-      target: prod
-    working_dir: /backend
-    # Ideally, your Dockerfile PROD target has this CMD built-in, so you shouldn't strictly need to declare it here.
-    command:
-      [
-        "/bin/bash",
-        "./scripts/start.sh",
-        "uvicorn",
-        "app.main:app",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8000",
-      ]
-    environment:
-      <<: *backend-env
-      CORS_ORIGINS: ${CORS_ORIGINS:-}
-    # No volumes! Prod should be immutable.
-    ports:
-      - "8000:8000"
-    profiles:
-      - prod
-
-  # --- CELERY WORKERS ---
-
-  celery-worker-dev:
-    <<: *backend-base
-    build:
-      context: ./backend
-      target: dev
-    working_dir: /backend
-    command:
-      ["poetry", "run", "celery", "-A", "app.celery_app", "worker", "--loglevel=info"]
     volumes:
-      - ./backend/app:/backend/app
-      - ./backend/pyproject.toml:/backend/pyproject.toml
-      - ./backend/poetry.lock:/backend/poetry.lock
-    profiles:
-      - dev
+      - chrono_uploads:/tmp/chrono_uploads
 
-  celery-worker-prod:
-    <<: *backend-base
+  celery-worker:
     build:
       context: ./backend
-      target: prod
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD:-chrono}@db:5432/${POSTGRES_DB:-chrono}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     working_dir: /backend
-    command:
-      ["poetry", "run", "celery", "-A", "app.celery_app", "worker", "--loglevel=info"]
-    profiles:
-      - prod
+    volumes:
+      - chrono_uploads:/tmp/chrono_uploads
 
-  # --- FRONTEND ---
-
-  frontend-dev:
+  frontend:
     build:
       context: ./frontend
-      target: dev
     working_dir: /app
-    command: pnpm dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api-dev
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules # Anonymous volume to prevent host overwriting container modules
-      - /app/.next
-    profiles:
-      - dev
-
-  frontend-prod:
-    build:
-      context: ./frontend
-      target: prod
-      args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-    working_dir: /app
-    command: pnpm start
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api-prod
-    profiles:
-      - prod
 
 volumes:
   pgdata:
+  chrono_uploads:

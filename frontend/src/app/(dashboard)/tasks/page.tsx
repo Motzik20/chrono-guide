@@ -6,9 +6,9 @@ import TaskDrafts from "@/components/tasks/TaskDrafts";
 
 export default function TasksPage() {
   return (
-    <TasksSplitView
-      leftContent={<IngestionInput />}
-      rightContent={<TaskDrafts />}
-    />
+      <TasksSplitView
+        leftContent={<IngestionInput />}
+        rightContent={<TaskDrafts />}
+      />
   );
 }

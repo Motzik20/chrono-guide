@@ -47,56 +47,82 @@ const textSchema = z.object({
     .max(10000, "Text must be less than 10000 characters"),
 });
 
-const taskDraftSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  expected_duration_minutes: z.number(),
-  tips: z.array(z.string()),
-  priority: z.number().optional(),
-  deadline: z.string().nullable().optional(),
+const jobResponseSchema = z.object({
+  job_id: z.string(),
+  status: z.string().optional(),
 });
 
-const taskDraftsSchema = z.array(taskDraftSchema);
+const jobStatusSchema = z.object({
+  id: z.string(),
+  status: z.enum(["pending", "running", "success", "failed"]),
+  result: z
+    .object({
+      draft_ids: z.array(z.number()),
+      created_count: z.number(),
+    })
+    .nullable()
+    .optional(),
+  error: z.string().nullable().optional(),
+});
 
 export default function IngestionInput() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"file" | "text">("file");
+
+  async function pollJobStatus(
+    jobId: string
+  ): Promise<z.infer<typeof jobStatusSchema>> {
+    const maxAttempts = 60; // 60 attempts = ~5 minutes max (5 second intervals)
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      const status = await apiRequest(`/tasks/jobs/${jobId}`, jobStatusSchema, {
+        method: "GET",
+      });
+
+      if (status.status === "success" || status.status === "failed") {
+        return status;
+      }
+
+      // Wait 2 seconds before next poll
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      attempts++;
+    }
+
+    throw new Error("Job polling timeout");
+  }
 
   async function onFileSubmit(values: z.infer<typeof fileSchema>) {
     setIsLoading(true);
     try {
       const formData = new FormData();
       formData.append("file", values.file);
-      const drafts = await apiRequest("/tasks/ingest/file", taskDraftsSchema, {
-        method: "POST",
-        body: formData,
-      });
-
-      const tasksToCreate = drafts.map((draft) => ({
-        title: draft.title,
-        description: draft.description,
-        expected_duration_minutes: draft.expected_duration_minutes,
-        priority: draft.priority ?? 2,
-        deadline: draft.deadline,
-        tips: draft.tips,
-      }));
-
-      await apiRequest(
-        "/tasks/bulk",
-        z.object({
-          task_ids: z.array(z.number()),
-          created_count: z.number(),
-        }),
+      const jobResponse = await apiRequest(
+        "/tasks/ingest/file",
+        jobResponseSchema,
         {
           method: "POST",
-          body: JSON.stringify(tasksToCreate),
+          body: formData,
         }
       );
 
-      toast.success(
-        `Successfully created ${drafts.length} draft task${drafts.length === 1 ? "" : "s"}`
-      );
-      window.location.reload();
+      // Poll for job completion
+      const jobStatus = await pollJobStatus(jobResponse.job_id);
+
+      if (jobStatus.status === "failed") {
+        toast.error(jobStatus.error || "Failed to ingest file");
+        return;
+      }
+
+      if (jobStatus.status === "success" && jobStatus.result) {
+        const createdCount = jobStatus.result.created_count;
+        toast.success(
+          `Successfully created ${createdCount} draft task${createdCount === 1 ? "" : "s"}`
+        );
+        window.location.reload();
+      } else {
+        toast.error("Job completed but no tasks were created");
+      }
     } catch (error) {
       console.error("File ingestion failed:", error);
       toast.error("Failed to ingest file");
@@ -109,36 +135,32 @@ export default function IngestionInput() {
     setIsLoading(true);
     try {
       const body = JSON.stringify(values);
-      const drafts = await apiRequest("/tasks/ingest/text", taskDraftsSchema, {
-        method: "POST",
-        body: body,
-      });
-
-      const tasksToCreate = drafts.map((draft) => ({
-        title: draft.title,
-        description: draft.description,
-        expected_duration_minutes: draft.expected_duration_minutes,
-        priority: draft.priority ?? 2,
-        deadline: draft.deadline,
-        tips: draft.tips,
-      }));
-
-      await apiRequest(
-        "/tasks/bulk",
-        z.object({
-          task_ids: z.array(z.number()),
-          created_count: z.number(),
-        }),
+      const jobResponse = await apiRequest(
+        "/tasks/ingest/text",
+        jobResponseSchema,
         {
           method: "POST",
-          body: JSON.stringify(tasksToCreate),
+          body: body,
         }
       );
 
-      toast.success(
-        `Successfully created ${drafts.length} draft task${drafts.length === 1 ? "" : "s"}`
-      );
-      window.location.reload();
+      // Poll for job completion
+      const jobStatus = await pollJobStatus(jobResponse.job_id);
+
+      if (jobStatus.status === "failed") {
+        toast.error(jobStatus.error || "Failed to ingest text");
+        return;
+      }
+
+      if (jobStatus.status === "success" && jobStatus.result) {
+        const createdCount = jobStatus.result.created_count;
+        toast.success(
+          `Successfully created ${createdCount} draft task${createdCount === 1 ? "" : "s"}`
+        );
+        window.location.reload();
+      } else {
+        toast.error("Job completed but no tasks were created");
+      }
     } catch (error) {
       console.error("Text ingestion failed:", error);
       toast.error("Failed to ingest text");

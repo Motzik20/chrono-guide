@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      target: prod
+    command:
+      [
+        "/bin/bash",
+        "./scripts/start.sh",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+      ]
+    environment:
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    restart: always
+
+  celery-worker:
+    build:
+      target: prod
+    command:
+      ["poetry", "run", "celery", "-A", "app.celery_app", "worker", "--loglevel=info"]
+    restart: always
+
+  flower:
+    build:
+      context: ./backend
+      target: prod
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD:-chrono}@db:5432/${POSTGRES_DB:-chrono}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    command:
+      ["poetry", "run", "celery", "-A", "app.celery_app", "flower", "--port=5555"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    working_dir: /backend
+    ports:
+      - "5555:5555"
+    restart: always
+
+  frontend:
+    build:
+      target: prod
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    command: pnpm start
+    restart: always
+
