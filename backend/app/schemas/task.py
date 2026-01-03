@@ -54,6 +54,7 @@ class TaskRead(BaseModel):
     updated_at: dt.datetime
     scheduled_at: dt.datetime | None = None
     completed_at: dt.datetime | None = None
+    committed_at: dt.datetime | None = None
 
     @field_validator("tips", mode="before")
     @classmethod
@@ -102,3 +103,13 @@ class TasksCreateResponse(BaseModel):
 class TaskCreateResponse(BaseModel):
     task_id: int
     created: bool
+
+
+class IngestTaskResponse(BaseModel):
+    draft_ids: list[int]
+    created_count: int
+
+
+class JobResponse(BaseModel):
+    job_id: str
+    status: str = "processing"

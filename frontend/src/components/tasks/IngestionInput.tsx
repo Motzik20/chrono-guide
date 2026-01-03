@@ -16,7 +16,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { apiRequest } from "@/lib/chrono-client";
+import { useJobManager } from "@/context/job-context";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,11 +25,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { FileText, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { useTaskDrafts } from "@/context/task-drafts-context";
-import { TaskDraft } from "@/lib/task-types";
+import { toast } from "sonner";
 
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const fileSchema = z.object({
   file: z
@@ -48,39 +47,18 @@ const textSchema = z.object({
     .max(10000, "Text must be less than 10000 characters"),
 });
 
-const taskDraft = z.object({
-  title: z.string(),
-  description: z.string(),
-  expected_duration_minutes: z.number().min(1),
-  tips: z.array(z.string()),
-  priority: z.number().min(0).max(4).optional(),
-  deadline: z.iso.datetime().optional().nullable(),
-});
-
-const taskDrafts = z.array(taskDraft);
-
 export default function IngestionInput() {
-  const { addDrafts } = useTaskDrafts();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"file" | "text">("file");
+  const { addJob, addTextJob } = useJobManager();
 
   async function onFileSubmit(values: z.infer<typeof fileSchema>) {
     setIsLoading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", values.file);
-      const response: TaskDraft[] = await apiRequest(
-        "/tasks/ingest/file",
-        taskDrafts,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-      console.log("File ingestion response:", response);
-      addDrafts(response);
+      await addJob(values.file);
     } catch (error) {
       console.error("File ingestion failed:", error);
+      toast.error("Failed to ingest file");
     } finally {
       setIsLoading(false);
     }
@@ -89,20 +67,10 @@ export default function IngestionInput() {
   async function onTextSubmit(values: z.infer<typeof textSchema>) {
     setIsLoading(true);
     try {
-      const body = JSON.stringify(values);
-      console.log("Text ingestion body:", body);
-      const response: TaskDraft[] = await apiRequest(
-        "/tasks/ingest/text",
-        taskDrafts,
-        {
-          method: "POST",
-          body: body,
-        }
-      );
-      console.log("Text ingestion response:", response);
-      addDrafts(response);
+      await addTextJob(values.text);
     } catch (error) {
       console.error("Text ingestion failed:", error);
+      toast.error("Failed to ingest text");
     } finally {
       setIsLoading(false);
     }
@@ -277,7 +245,7 @@ function FileInput({
               <Spinner /> Analyzing...
             </div>
           ) : (
-            "Analyze Text"
+            "Analyze File"
           )}
         </Button>
       </form>

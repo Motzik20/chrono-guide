@@ -1,21 +1,26 @@
-from unittest.mock import AsyncMock
+from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
-from app.schemas.task import TaskDraft, TextAnalysisRequest
+from app.schemas.task import TextAnalysisRequest
 
 
 class TestIngestFile:
     """Tests for POST /tasks/ingest/file endpoint."""
 
+    @patch("app.api.routers.tasks.ingest_file_task")
     def test_ingest_file_success(
         self,
+        mock_ingest_task: MagicMock,
         client: TestClient,
-        mock_task_drafts: list[TaskDraft],
-        mock_chrono_agent: AsyncMock,
         mock_user_id: int,
     ) -> None:
-        """Test successful file ingestion."""
+        """Test successful file ingestion returns job ID."""
+        # Mock Celery task
+        mock_job = MagicMock()
+        mock_job.id = "test-job-id-123"
+        mock_ingest_task.delay.return_value = mock_job
+
         file_content = b"fake image content"
         files = {"file": ("test.jpg", file_content, "image/jpeg")}
 
@@ -23,13 +28,13 @@ class TestIngestFile:
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 2
-        assert data[0]["title"] == "Test Task 1"
-        assert data[1]["title"] == "Test Task 2"
-        mock_chrono_agent.analyze_tasks_from_file.assert_awaited_once()
+        assert "job_id" in data
+        assert data["job_id"] == "test-job-id-123"
+        assert data["status"] == "processing"
+        mock_ingest_task.delay.assert_called_once()
 
     def test_ingest_file_invalid_content_type(
-        self, client: TestClient, mock_chrono_agent: AsyncMock, mock_user_id: int
+        self, client: TestClient, mock_user_id: int
     ) -> None:
         """Test file ingestion fails with invalid content type."""
         file_content = b"fake content"
@@ -39,77 +44,76 @@ class TestIngestFile:
 
         assert response.status_code == 400
         assert "Invalid file content type" in response.json()["detail"]
-        mock_chrono_agent.analyze_tasks_from_file.assert_not_called()
 
+    @patch("app.api.routers.tasks.ingest_file_task")
     def test_ingest_file_png_success(
         self,
+        mock_ingest_task: MagicMock,
         client: TestClient,
-        mock_task_drafts: list[TaskDraft],
-        mock_chrono_agent: AsyncMock,
         mock_user_id: int,
     ) -> None:
-        """Test successful PNG file ingestion."""
+        """Test successful PNG file ingestion returns job ID."""
+        mock_job = MagicMock()
+        mock_job.id = "test-job-id-png"
+        mock_ingest_task.delay.return_value = mock_job
+
         file_content = b"fake png content"
         files = {"file": ("test.png", file_content, "image/png")}
 
         response = client.post("/tasks/ingest/file", files=files)
 
         assert response.status_code == 200
-        assert len(response.json()) == 2
+        data = response.json()
+        assert "job_id" in data
+        assert data["job_id"] == "test-job-id-png"
 
+    @patch("app.api.routers.tasks.ingest_file_task")
     def test_ingest_file_pdf_success(
         self,
+        mock_ingest_task: MagicMock,
         client: TestClient,
-        mock_task_drafts: list[TaskDraft],
-        mock_chrono_agent: AsyncMock,
         mock_user_id: int,
     ) -> None:
-        """Test successful PDF file ingestion."""
+        """Test successful PDF file ingestion returns job ID."""
+        mock_job = MagicMock()
+        mock_job.id = "test-job-id-pdf"
+        mock_ingest_task.delay.return_value = mock_job
+
         file_content = b"fake pdf content"
         files = {"file": ("test.pdf", file_content, "application/pdf")}
 
         response = client.post("/tasks/ingest/file", files=files)
 
         assert response.status_code == 200
-        assert len(response.json()) == 2
+        data = response.json()
+        assert "job_id" in data
+        assert data["job_id"] == "test-job-id-pdf"
 
 
 class TestIngestText:
     """Tests for POST /tasks/ingest/text endpoint."""
 
+    @patch("app.api.routers.tasks.ingest_text_task")
     def test_ingest_text_success(
         self,
+        mock_ingest_task: MagicMock,
         client: TestClient,
-        mock_task_drafts: list[TaskDraft],
-        mock_chrono_agent: AsyncMock,
         mock_user_id: int,
     ) -> None:
-        """Test successful text ingestion."""
+        """Test successful text ingestion returns job ID."""
+        mock_job = MagicMock()
+        mock_job.id = "test-job-id-text"
+        mock_ingest_task.delay.return_value = mock_job
+
         text_request = TextAnalysisRequest(text="This is a test task description")
         response = client.post("/tasks/ingest/text", json=text_request.model_dump())
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 2
-        assert data[0]["title"] == "Test Task 1"
-        mock_chrono_agent.analyze_tasks_from_text.assert_awaited_once_with(
-            "This is a test task description", "en"
-        )
-
-    def test_ingest_text_empty_result(
-        self, client: TestClient, mock_chrono_agent: AsyncMock, mock_user_id: int
-    ) -> None:
-        """Test text ingestion returns empty list when no tasks found."""
-
-        mock_chrono_agent.analyze_tasks_from_text = AsyncMock(return_value=[])
-        text_request = TextAnalysisRequest(text="No tasks here")
-        response = client.post("/tasks/ingest/text", json=text_request.model_dump())
-
-        assert response.status_code == 200
-        assert response.json() == []
-        mock_chrono_agent.analyze_tasks_from_text.assert_awaited_once_with(
-            "No tasks here", "en"
-        )
+        assert "job_id" in data
+        assert data["job_id"] == "test-job-id-text"
+        assert data["status"] == "processing"
+        mock_ingest_task.delay.assert_called_once()
 
 
 class TestCreateTask:

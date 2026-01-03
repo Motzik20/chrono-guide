@@ -12,7 +12,7 @@ from app.core.exceptions import NotFoundError, SystemError
 
 
 def create_app(local: bool) -> FastAPI:
-    init_db(local)
+    init_db()
     app = FastAPI(title=APP_NAME, version=APP_VERSION)
 
     cors_origins_env = os.getenv(

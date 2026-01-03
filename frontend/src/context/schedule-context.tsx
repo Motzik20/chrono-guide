@@ -39,11 +39,7 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
       toast.success(`Successfully deleted ${taskIds.length} ${taskWord}`);
       return true;
     } catch (error) {
-      if (error instanceof ApiError) {
-        toast.error(`Failed to delete tasks: ${error.message}`);
-      } else {
-        toast.error("Failed to delete tasks. Please try again.");
-      }
+      toast.error("Failed to delete tasks. Please try again.");
       return false;
     }
   }
@@ -87,11 +83,7 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
 
       return response;
     } catch (error) {
-      if (error instanceof ApiError) {
-        toast.error(`Failed to schedule tasks: ${error.message}`);
-      } else {
-        toast.error("Failed to schedule tasks. Please try again.");
-      }
+      toast.error("Failed to schedule tasks. Please try again.");
       return null;
     }
   }

@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useRouter } from "next/navigation";
 import { apiRequest, ApiError } from "@/lib/chrono-client";
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const unauthorizedHandledRef = useRef(false);
 
   // Check auth status on mount by making a lightweight API call
   const checkAuth = useCallback(async () => {
@@ -87,6 +89,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Handle 401 unauthorized events from API client
   useEffect(() => {
     const handleUnauthorized = () => {
+      if (unauthorizedHandledRef.current) {
+        return;
+      }
+      unauthorizedHandledRef.current = true;
       setIsAuthenticated(false);
       logout();
       toast.error("Session expired. Please login again.");
@@ -97,6 +103,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("auth:unauthorized", handleUnauthorized);
     };
   }, [router, logout]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      unauthorizedHandledRef.current = false;
+    }
+  }, [isAuthenticated]);
 
   return (
     <AuthContext.Provider

@@ -83,7 +83,7 @@ def convert_model_datetimes_to_utc(model_data: dict[str, Any]) -> dict[str, Any]
     """
     Convert all datetime fields in a model to UTC using model_validator.
     """
-    datetime_fields = ["created_at", "updated_at", "deadline", "start_time", "end_time"]
+    datetime_fields = ["created_at", "updated_at", "deadline", "start_time", "end_time", "committed_at"]
 
     for field in datetime_fields:
         if field in model_data and model_data[field] is not None:

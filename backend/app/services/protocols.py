@@ -12,7 +12,7 @@ from app.services.scheduling_types import SchedulingConfig, SchedulingResponse
 class ChronoAgent(Protocol):
     """Protocol for task analysis services (e.g., LLM-based analyzers)."""
 
-    async def analyze_tasks_from_file(
+    def analyze_tasks_from_file(
         self, file_request: FileAnalysisRequest
     ) -> list[TaskDraft]:
         """
@@ -26,9 +26,7 @@ class ChronoAgent(Protocol):
         """
         ...
 
-    async def analyze_tasks_from_text(
-        self, text: str, language: str
-    ) -> list[TaskDraft]:
+    def analyze_tasks_from_text(self, text: str, language: str) -> list[TaskDraft]:
         """
         Analyze text and extract task information.
 

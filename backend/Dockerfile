@@ -12,12 +12,17 @@ FROM base AS dev
 RUN poetry install --no-interaction --no-ansi
 COPY ./app ./app
 COPY alembic.ini ./
+
+ENV HOME=/tmp
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 FROM base AS prod
-RUN poetry install --no-dev --no-interaction --no-ansi
+RUN addgroup --system appgroup && adduser --system --group appuser
+RUN poetry install --without dev--no-interaction --no-ansi
 COPY ./app ./app
 COPY alembic.ini ./
+RUN chown -R appuser:appgroup /backend
+USER appuser
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

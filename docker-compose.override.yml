@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      target: dev
+    user: "${UID:-1000}:${GID:-1000}"
+    command:
+      [
+        "/bin/bash",
+        "./scripts/start.sh",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+      ]
+    environment:
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      HOME: /tmp
+    volumes:
+      - ./backend/app:/backend/app
+      - ./backend/alembic.ini:/backend/alembic.ini
+      - ./backend/app/alembic:/backend/app/alembic
+      - ./backend/pyproject.toml:/backend/pyproject.toml
+      - ./backend/poetry.lock:/backend/poetry.lock
+      - ./backend/scripts:/backend/scripts
+      - chrono_uploads:/tmp/chrono_uploads
+
+  celery-worker:
+    build:
+      target: dev
+    user: "${UID:-1000}:${GID:-1000}"
+    command:
+      ["poetry", "run", "celery", "-A", "app.celery_app", "worker", "--loglevel=info"]
+    environment:
+      HOME: /tmp
+    volumes:
+      - ./backend/app:/backend/app
+      - ./backend/pyproject.toml:/backend/pyproject.toml
+      - ./backend/poetry.lock:/backend/poetry.lock
+      - chrono_uploads:/tmp/chrono_uploads
+
+  flower:
+    build:
+      context: ./backend
+      target: dev
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD:-chrono}@db:5432/${POSTGRES_DB:-chrono}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      HOME: /tmp
+    user: "${UID:-1000}:${GID:-1000}"
+    command:
+      ["poetry", "run", "celery", "-A", "app.celery_app", "flower", "--port=5555"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    working_dir: /backend
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./backend/app:/backend/app
+      - ./backend/pyproject.toml:/backend/pyproject.toml
+      - ./backend/poetry.lock:/backend/poetry.lock
+
+  frontend:
+    build:
+      target: dev
+    user: "${UID:-1000}:${GID:-1000}"
+    command: pnpm dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+

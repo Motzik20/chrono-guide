@@ -39,6 +39,10 @@ class Task(SQLModel, table=True):
     completed_at: dt.datetime | None = Field(
         default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
     )
+    committed_at: dt.datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True, index=True),
+    )
 
     @model_validator(mode="before")
     @classmethod

@@ -3,14 +3,26 @@ import datetime as dt
 from sqlmodel import Session, select
 
 from app.core.exceptions import NotFoundError
+from app.core.timezone import now_utc
 from app.models.task import Task
-from app.schemas.task import TaskCreate, TasksDelete
+from app.schemas.task import TaskCreate, TasksDelete, TaskUpdate
+
+
+def get_drafts(user_id: int, session: Session) -> list[Task]:
+    return list(
+        session.exec(
+            select(Task).where(Task.user_id == user_id).where(Task.committed_at == None)
+        ).all()
+    )
 
 
 def get_unscheduled_tasks(user_id: int, session: Session) -> list[Task]:
     return list(
         session.exec(
-            select(Task).where(Task.user_id == user_id).where(Task.scheduled_at == None)
+            select(Task)
+            .where(Task.user_id == user_id)
+            .where(Task.committed_at != None)
+            .where(Task.scheduled_at == None)
         ).all()
     )
 
@@ -110,3 +122,38 @@ def delete_tasks(tasks_delete: TasksDelete, user_id: int, session: Session) -> N
             raise NotFoundError(f"Task with id {task_id} not found")
         session.delete(task)
     session.flush()
+
+
+def update_task(
+    task_id: int, task_update: TaskUpdate, user_id: int, session: Session
+) -> Task:
+    task = session.exec(
+        select(Task).where(Task.id == task_id).where(Task.user_id == user_id)
+    ).one_or_none()
+    if not task:
+        raise NotFoundError(f"Task with id {task_id} not found")
+
+    update_data = task_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(task, key, value)
+    task.updated_at = now_utc()
+    session.add(task)
+    session.flush()
+    session.refresh(task)
+    return task
+
+
+def commit_drafts(draft_ids: list[int], user_id: int, session: Session) -> list[Task]:
+    drafts = session.exec(
+        select(Task)
+        .where(Task.id.in_(draft_ids))  # type: ignore[union-attr]
+        .where(Task.user_id == user_id)
+        .where(Task.committed_at == None)
+    ).all()
+
+    commit_time = now_utc()
+    for draft in drafts:
+        draft.committed_at = commit_time
+        session.add(draft)
+    session.flush()
+    return list(drafts)
