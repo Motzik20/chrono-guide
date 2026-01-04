@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import TaskList from "./TaskList";
 import { TasksResponseSchema } from "@/lib/task-types";
-import { apiRequest, ApiError } from "@/lib/chrono-client";
+import { apiRequest } from "@/lib/chrono-client";
 import Link from "next/link";
 import { useSchedule } from "@/context/schedule-context";
 import { useTaskList } from "@/hooks/useTaskLists";
@@ -38,7 +38,7 @@ export default function ScheduledTasks() {
         );
         await fetchTasks();
         refreshScheduleItems();
-      } catch (error) {
+      } catch {
         toast.error("Failed to mark tasks as completed. Please try again.");
       }
     },
