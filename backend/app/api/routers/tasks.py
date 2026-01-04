@@ -8,7 +8,7 @@ from app.celery_app import celery_app
 from app.core.auth import get_current_user_id
 from app.core.db import get_db
 from app.crud import task_crud
-from app.crud.setting_crud import get_user_setting
+from app.crud.setting_crud import get_user_setting, get_user_timezone
 from app.models.task import Task
 from app.schemas.job import IngestTaskJob, JobStatus
 from app.schemas.task import (
@@ -105,8 +105,9 @@ async def get_unscheduled_tasks(
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
 ) -> list[TaskRead]:
+    user_timezone: str = get_user_timezone(user_id, session)
     return [
-        TaskRead.model_validate(task)
+        TaskRead.from_model(task, user_timezone)
         for task in task_crud.get_unscheduled_tasks(user_id, session)
     ]
 
@@ -116,8 +117,9 @@ async def get_scheduled_tasks(
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
 ) -> list[TaskRead]:
+    user_timezone: str = get_user_timezone(user_id, session)
     return [
-        TaskRead.model_validate(task)
+        TaskRead.from_model(task, user_timezone)
         for task in task_crud.get_scheduled_tasks(user_id, session)
     ]
 
@@ -127,8 +129,9 @@ async def get_completed_tasks(
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
 ) -> list[TaskRead]:
+    user_timezone: str = get_user_timezone(user_id, session)
     return [
-        TaskRead.model_validate(task)
+        TaskRead.from_model(task, user_timezone)
         for task in task_crud.get_completed_tasks(user_id, session)
     ]
 
@@ -147,8 +150,10 @@ async def get_drafts(
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
 ) -> list[TaskRead]:
+    user_timezone: str = get_user_timezone(user_id, session)
     return [
-        TaskRead.model_validate(task) for task in task_crud.get_drafts(user_id, session)
+        TaskRead.from_model(task, user_timezone)
+        for task in task_crud.get_drafts(user_id, session)
     ]
 
 
@@ -173,9 +178,10 @@ async def update_task(
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
 ) -> TaskRead:
+    user_timezone: str = get_user_timezone(user_id, session)
     updated_task = task_crud.update_task(task_id, task_update, user_id, session)
     session.commit()
-    return TaskRead.model_validate(updated_task)
+    return TaskRead.from_model(updated_task, user_timezone)
 
 
 @router.get("/jobs/{job_id}", status_code=status.HTTP_200_OK)

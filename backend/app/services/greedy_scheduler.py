@@ -6,7 +6,7 @@ from collections import deque
 from app.core.timezone import (
     get_next_half_hour,
     get_next_weekday,
-    now_utc,
+    now_user_timezone,
     parse_user_datetime,
 )
 from app.models.availability import WeeklyAvailability
@@ -67,7 +67,8 @@ class GreedyScheduler:
         schedulable_tasks = tasks_to_schedulables(tasks)
         busy_intervals = schedule_items_to_busy_intervals(schedule_items)
         scheduler_availability = SchedulerAvailability.model_validate(availability)
-        start_time = get_next_half_hour(now_utc())
+        user_now = now_user_timezone(config.timezone)
+        start_time = get_next_half_hour(user_now)
 
         request = SchedulingRequest(
             tasks=schedulable_tasks,

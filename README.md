@@ -32,6 +32,10 @@ An intelligent task scheduling system that uses AI to extract tasks from content
    You need a root `.env` file to handle Docker permissions and ports.
 
    **Create a file named `.env` in the root folder:**
+   ```env
+   UID=1000
+   GID=1000
+   ```
    
    **For macOS / Windows (Docker Desktop):**
    ```bash
@@ -56,15 +60,20 @@ An intelligent task scheduling system that uses AI to extract tasks from content
    # CORS_ORIGINS is optional, defaults to localhost
    CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
    ```
+4. **Frontend Secrets Setup**
+   Create `backend/.env.local` for the API's url:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:8000
+   ```
 
-4. **Start Development Environment**
+5. **Start Development Environment**
    Docker automatically picks up the override file for development.
    ```bash
    docker compose up --build
    ```
    *Note: Database migrations run automatically on startup.*
 
-5. **Access the application**
+6. **Access the application**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Docs: http://localhost:8000/docs

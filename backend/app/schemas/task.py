@@ -2,6 +2,8 @@ import datetime as dt
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.models.task import Task
+
 
 class TaskBaseValidation(BaseModel):
     deadline: dt.datetime | None = None
@@ -55,6 +57,7 @@ class TaskRead(BaseModel):
     scheduled_at: dt.datetime | None = None
     completed_at: dt.datetime | None = None
     committed_at: dt.datetime | None = None
+    user_timezone: str
 
     @field_validator("tips", mode="before")
     @classmethod
@@ -62,6 +65,25 @@ class TaskRead(BaseModel):
         if v is None:
             return []
         return v
+
+    @classmethod
+    def from_model(cls, model: Task, user_timezone: str) -> "TaskRead":
+        return cls(
+            id=model.id,  # type: ignore[attr-defined]
+            user_id=model.user_id,
+            title=model.title,
+            description=model.description,
+            expected_duration_minutes=model.expected_duration_minutes,
+            tips=model.tips,
+            deadline=model.deadline,
+            priority=model.priority,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+            scheduled_at=model.scheduled_at,
+            completed_at=model.completed_at,
+            committed_at=model.committed_at,
+            user_timezone=user_timezone,
+        )
 
 
 class TasksDelete(BaseModel):

@@ -17,6 +17,7 @@ import {
 import { apiDownloadRequest, apiRequest, ApiError } from "@/lib/chrono-client";
 import { useSchedule } from "@/context/schedule-context";
 import { toast } from "sonner";
+import { formatDuration, formatFloatingTime } from "@/lib/format-dt";
 
 export default function ScheduleItemsList() {
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
@@ -68,25 +69,6 @@ export default function ScheduleItemsList() {
     } finally {
       setIsExporting(false);
     }
-  };
-
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
-
-  const formatDuration = (startTime: string, endTime: string) => {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const diffMs = end.getTime() - start.getTime();
-    const diffMins = Math.round(diffMs / (1000 * 60));
-
-    if (diffMins < 60) {
-      return `${diffMins} min`;
-    }
-    const hours = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
-    return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
   };
 
   if (isLoading) {
@@ -155,8 +137,8 @@ export default function ScheduleItemsList() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span>
-                    {formatDateTime(item.start_time)} -{" "}
-                    {formatDateTime(item.end_time)}
+                    {formatFloatingTime(item.start_time)} -{" "}
+                    {formatFloatingTime(item.end_time)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

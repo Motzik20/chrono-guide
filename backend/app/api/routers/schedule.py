@@ -6,7 +6,7 @@ from app.core.db import get_db
 from app.core.timezone import now_utc
 from app.crud.availability_crud import get_user_availability
 from app.crud.schedule_item_crud import create_schedule_items, get_user_schedule_items
-from app.crud.setting_crud import get_schedule_config
+from app.crud.setting_crud import get_schedule_config, get_user_timezone
 from app.crud.task_crud import (
     get_tasks_by_ids,
     get_unscheduled_tasks,
@@ -15,7 +15,7 @@ from app.crud.task_crud import (
 from app.models.availability import WeeklyAvailability
 from app.models.schedule_item import ScheduleItem
 from app.models.task import Task
-from app.schemas.schedule_item import ScheduleItemCreate
+from app.schemas.schedule_item import ScheduleItemCreate, ScheduleItemResponse
 from app.schemas.schedule_requests import ScheduleGenerateRequest
 from app.services.greedy_scheduler import GreedyScheduler
 from app.services.ical_service import export_calendar_from_schedule_items
@@ -51,8 +51,13 @@ async def get_schedule_items(
     user_id: int = Depends(get_current_user_id),
     session: Session = Depends(get_db),
     source: str | None = None,
-) -> list[ScheduleItem]:
-    return get_user_schedule_items(user_id, session, source)
+) -> list[ScheduleItemResponse]:
+    items: list[ScheduleItem] = get_user_schedule_items(user_id, session, source)
+    user_timezone: str = get_user_timezone(user_id, session)
+    converted_items: list[ScheduleItemResponse] = [
+        ScheduleItemResponse.from_model(item, user_timezone) for item in items
+    ]
+    return converted_items
 
 
 @router.post("/generate/selected")
