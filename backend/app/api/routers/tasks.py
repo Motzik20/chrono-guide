@@ -7,9 +7,10 @@ from sqlmodel import Session
 from app.celery_app import celery_app
 from app.core.auth import get_current_user_id
 from app.core.db import get_db
-from app.crud import task_crud
+from app.crud import task_crud, temp_upload_crud
 from app.crud.setting_crud import get_user_setting, get_user_timezone
 from app.models.task import Task
+from app.models.temp_upload import TempUpload
 from app.schemas.job import IngestTaskJob, JobStatus
 from app.schemas.task import (
     IngestTaskResponse,
@@ -22,7 +23,6 @@ from app.schemas.task import (
     TaskUpdate,
     TextAnalysisRequest,
 )
-from app.services.file_storage import storage
 from app.tasks.ingestion_tasks import ingest_file as ingest_file_task
 from app.tasks.ingestion_tasks import ingest_text as ingest_text_task
 
@@ -43,12 +43,16 @@ async def ingest_file(
     if content_type not in allowed_content_types:
         raise HTTPException(status_code=400, detail="Invalid file content type")
 
-    file_path = storage.save_upload(file)
+    upload_record = temp_upload_crud.create_upload_record(
+        TempUpload(filename=file.filename, data=await file.read()), session
+    )
+    # Commit here to avoid race condition with celery task
+    session.commit()
 
     language: str = get_user_setting(user_id, "language", session).value
 
     job = ingest_file_task.delay(
-        file_path=file_path,
+        upload_id=upload_record.id,
         content_type=content_type,
         language=language,
         user_id=user_id,

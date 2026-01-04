@@ -1,11 +1,12 @@
-import os
 from typing import Any
 
 from celery import Task
+from celery.exceptions import MaxRetriesExceededError
+from pydantic import ValidationError
 
 from app.celery_app import celery_app
 from app.core.db import get_db
-from app.crud import task_crud
+from app.crud import task_crud, temp_upload_crud
 from app.models.task import Task as TaskModel
 from app.schemas.task import (
     FileAnalysisRequest,
@@ -13,7 +14,6 @@ from app.schemas.task import (
     TaskCreate,
     TaskDraft,
 )
-from app.services.file_storage import storage
 from app.services.llm.gemini_agent import GeminiAgent
 from app.services.protocols import ChronoAgent
 
@@ -21,7 +21,7 @@ from app.services.protocols import ChronoAgent
 @celery_app.task(bind=True, max_retries=3)
 def ingest_file(
     self: Task,  # type: ignore[reportUnknownReturnType]
-    file_path: str,
+    upload_id: int,
     content_type: str,
     language: str,
     user_id: int,
@@ -33,17 +33,12 @@ def ingest_file(
     session = next(session_gen)
 
     try:
-        # File should be available due to fsync in save_upload and countdown delay
-        # But check existence as a safety measure
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File {file_path} not found")
-
-        # Read file content
-        with open(file_path, "rb") as file:
-            file_content = file.read()
+        upload_record = temp_upload_crud.get_upload_record(upload_id, session)
 
         file_request = FileAnalysisRequest(
-            file_content=file_content, content_type=content_type, language=language
+            file_content=upload_record.data,
+            content_type=content_type,
+            language=language,
         )
 
         task_drafts: list[TaskDraft] = chrono_agent.analyze_tasks_from_file(
@@ -64,7 +59,7 @@ def ingest_file(
                 tasks_to_create, user_id, session
             )
             session.commit()
-            return IngestTaskResponse(
+            result = IngestTaskResponse(
                 draft_ids=[
                     task_model.id
                     for task_model in created_tasks
@@ -73,19 +68,32 @@ def ingest_file(
                 created_count=len(created_tasks),
             ).model_dump()
         else:
-            return IngestTaskResponse(
+            result = IngestTaskResponse(
                 draft_ids=[],
                 created_count=0,
             ).model_dump()
 
-    except (ValueError, FileNotFoundError) as exc:
+        temp_upload_crud.delete_upload_record(upload_record, session)
+        return result
+    except ValidationError as exc:
         session.rollback()
         raise self.retry(exc=exc, countdown=5)
+    except Exception as exc:
+        session.rollback()
+        try:
+            raise self.retry(exc=exc, countdown=5)
+        except MaxRetriesExceededError:
+            try:
+                zombie_record = temp_upload_crud.get_upload_record(upload_id, session)
+                temp_upload_crud.delete_upload_record(zombie_record, session)
+                session.commit()
+            except Exception as cleanup_error:
+                raise SystemError(
+                    f"Failed to clean up blob {upload_id}: {cleanup_error}"
+                )
+            raise exc
     finally:
         session.close()
-        # Only delete if file exists
-        if os.path.exists(file_path):
-            storage.delete(file_path)
 
 
 @celery_app.task(bind=True, max_retries=3)

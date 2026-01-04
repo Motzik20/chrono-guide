@@ -103,7 +103,9 @@ class TaskDraft(BaseModel):
 
     title: str
     description: str
-    expected_duration_minutes: int
+    expected_duration_minutes: int = Field(
+        ge=1, le=480, description="Duration between 1 minute and 8 hours (480 minutes)"
+    )
     tips: list[str] = Field(default_factory=list)
 
 

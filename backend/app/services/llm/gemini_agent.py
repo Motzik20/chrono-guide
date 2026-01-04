@@ -30,7 +30,7 @@ class GeminiAgent:
     def analyze_tasks_from_file(
         self, file_request: FileAnalysisRequest
     ) -> list[TaskDraft]:
-        prompt: str = f"From the file, identify and list all tasks. For each task, include: Concise Title, Description, Estimated Duration, and 2-4 actionable Tips derived from the visual context. Respond in {file_request.language}."
+        prompt: str = f"From the file, identify and list all tasks. For each task, include: Concise Title, Description, Expected Duration (in minutes), and 2-4 actionable Tips derived from the visual context. Respond in {file_request.language}."
 
         contents_parts: list[Part] = [
             Part(
