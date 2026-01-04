@@ -2,7 +2,6 @@ from typing import Any
 
 from celery import Task
 from celery.exceptions import MaxRetriesExceededError
-from pydantic import ValidationError
 
 from app.celery_app import celery_app
 from app.core.db import get_db
@@ -75,9 +74,6 @@ def ingest_file(
 
         temp_upload_crud.delete_upload_record(upload_record, session)
         return result
-    except ValidationError as exc:
-        session.rollback()
-        raise self.retry(exc=exc, countdown=5)
     except Exception as exc:
         session.rollback()
         try:

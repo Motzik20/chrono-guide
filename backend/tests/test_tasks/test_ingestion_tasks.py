@@ -1,10 +1,10 @@
-import os
-import tempfile
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from celery.exceptions import MaxRetriesExceededError
 from sqlmodel import Session
 
+from app.models.temp_upload import TempUpload
 from app.models.user import User
 from app.schemas.task import TaskDraft
 from app.tasks.ingestion_tasks import ingest_file, ingest_text
@@ -13,14 +13,14 @@ from app.tasks.ingestion_tasks import ingest_file, ingest_text
 class TestIngestFile:
     """Tests for ingest_file Celery task."""
 
-    @patch("app.tasks.ingestion_tasks.storage")
+    @patch("app.tasks.ingestion_tasks.temp_upload_crud")
     @patch("app.tasks.ingestion_tasks.GeminiAgent")
     @patch("app.tasks.ingestion_tasks.get_db")
     def test_ingest_file_success(
         self,
         mock_get_db: MagicMock,
         mock_gemini_agent: MagicMock,
-        mock_storage: MagicMock,
+        mock_temp_upload_crud: MagicMock,
         session: Session,
         user: User,
         mock_task_drafts: list[TaskDraft],
@@ -31,11 +31,11 @@ class TestIngestFile:
         mock_agent = MagicMock()
         mock_agent.analyze_tasks_from_file.return_value = mock_task_drafts
         mock_gemini_agent.return_value = mock_agent
-
-        # Create a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
-            tmp_file.write(b"fake image content")
-            file_path = tmp_file.name
+        mock_temp_upload_crud.get_upload_record.return_value = TempUpload(
+            id=1,
+            filename="test.jpg",
+            data=b"fake image content",
+        )
 
         # Save original retry method
         original_retry = ingest_file.retry
@@ -48,7 +48,7 @@ class TestIngestFile:
 
             # Call the task function directly using .run() to bypass Celery wrapper
             result = ingest_file.run(
-                file_path=file_path,
+                upload_id=1,
                 content_type="image/jpeg",
                 language="en",
                 user_id=user.id,  # type: ignore[attr-defined]
@@ -68,22 +68,23 @@ class TestIngestFile:
             assert call_args.language == "en"
 
             # Verify file was deleted
-            mock_storage.delete.assert_called_once_with(file_path)
+            mock_temp_upload_crud.delete_upload_record.assert_called_once_with(
+                TempUpload(id=1, filename="test.jpg", data=b"fake image content"),
+                session,
+            )
 
         finally:
             # Restore original retry method
             ingest_file.retry = original_retry
-            if os.path.exists(file_path):
-                os.unlink(file_path)
 
-    @patch("app.tasks.ingestion_tasks.storage")
+    @patch("app.tasks.ingestion_tasks.temp_upload_crud")
     @patch("app.tasks.ingestion_tasks.GeminiAgent")
     @patch("app.tasks.ingestion_tasks.get_db")
     def test_ingest_file_empty_result(
         self,
         mock_get_db: MagicMock,
         mock_gemini_agent: MagicMock,
-        mock_storage: MagicMock,
+        mock_temp_upload_crud: MagicMock,
         session: Session,
         user: User,
     ) -> None:
@@ -91,10 +92,11 @@ class TestIngestFile:
         mock_agent = MagicMock()
         mock_agent.analyze_tasks_from_file.return_value = []
         mock_gemini_agent.return_value = mock_agent
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
-            tmp_file.write(b"fake image content")
-            file_path = tmp_file.name
+        mock_temp_upload_crud.get_upload_record.return_value = TempUpload(
+            id=1,
+            filename="test.jpg",
+            data=b"fake image content",
+        )
 
         # Save original retry method
         original_retry = ingest_file.retry
@@ -105,7 +107,7 @@ class TestIngestFile:
             )
 
             result = ingest_file.run(
-                file_path=file_path,
+                upload_id=1,
                 content_type="image/jpeg",
                 language="en",
                 user_id=user.id,  # type: ignore[attr-defined]
@@ -121,58 +123,23 @@ class TestIngestFile:
             assert call_args.content_type == "image/jpeg"
             assert call_args.language == "en"
 
-            mock_storage.delete.assert_called_once_with(file_path)
-
-        finally:
-            # Restore original retry method
-            ingest_file.retry = original_retry
-            if os.path.exists(file_path):
-                os.unlink(file_path)
-
-    @patch("app.tasks.ingestion_tasks.storage")
-    @patch("app.tasks.ingestion_tasks.GeminiAgent")
-    @patch("app.tasks.ingestion_tasks.get_db")
-    @patch("app.tasks.ingestion_tasks.os.path.exists")
-    def test_ingest_file_not_found(
-        self,
-        mock_exists: MagicMock,
-        mock_get_db: MagicMock,
-        mock_gemini_agent: MagicMock,
-        mock_storage: MagicMock,
-        session: Session,
-        user: User,
-    ) -> None:
-        """Test file ingestion when file doesn't exist."""
-        mock_get_db.return_value = iter([session])
-        mock_exists.return_value = False
-
-        # Save original retry method
-        original_retry = ingest_file.retry
-
-        try:
-            # Patch retry to raise exception when called
-            ingest_file.retry = Mock(side_effect=Exception("Retry called"))
-
-            with pytest.raises(Exception, match="Retry called"):
-                ingest_file.run(
-                    file_path="/nonexistent/file.jpg",
-                    content_type="image/jpeg",
-                    language="en",
-                    user_id=user.id,  # type: ignore[attr-defined]
-                )
+            mock_temp_upload_crud.delete_upload_record.assert_called_once_with(
+                TempUpload(id=1, filename="test.jpg", data=b"fake image content"),
+                session,
+            )
 
         finally:
             # Restore original retry method
             ingest_file.retry = original_retry
 
-    @patch("app.tasks.ingestion_tasks.storage")
+    @patch("app.tasks.ingestion_tasks.temp_upload_crud")
     @patch("app.tasks.ingestion_tasks.GeminiAgent")
     @patch("app.tasks.ingestion_tasks.get_db")
     def test_ingest_file_value_error_retry(
         self,
         mock_get_db: MagicMock,
         mock_gemini_agent: MagicMock,
-        mock_storage: MagicMock,
+        mock_temp_upload_crud: MagicMock,
         session: Session,
         user: User,
     ) -> None:
@@ -184,40 +151,42 @@ class TestIngestFile:
         )
         mock_gemini_agent.return_value = mock_agent
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
-            tmp_file.write(b"fake image content")
-            file_path = tmp_file.name
+        mock_temp_upload_crud.get_upload_record.return_value = TempUpload(
+            id=1,
+            filename="test.jpg",
+            data=b"fake image content",
+        )
 
         # Save original retry method
         original_retry = ingest_file.retry
 
         try:
             # Patch retry to raise exception when called
-            ingest_file.retry = Mock(side_effect=Exception("Retry called"))
-
-            with pytest.raises(Exception, match="Retry called"):
+            ingest_file.retry = Mock(side_effect=MaxRetriesExceededError)
+            with pytest.raises(ValueError):
                 ingest_file.run(
-                    file_path=file_path,
+                    upload_id=1,
                     content_type="image/jpeg",
                     language="en",
                     user_id=user.id,  # type: ignore[attr-defined]
                 )
 
-            mock_storage.delete.assert_called_once_with(file_path)
+            mock_temp_upload_crud.delete_upload_record.assert_called_once_with(
+                TempUpload(id=1, filename="test.jpg", data=b"fake image content"),
+                session,
+            )
         finally:
             # Restore original retry method
             ingest_file.retry = original_retry
-            if os.path.exists(file_path):
-                os.unlink(file_path)
 
-    @patch("app.tasks.ingestion_tasks.storage")
+    @patch("app.tasks.ingestion_tasks.temp_upload_crud")
     @patch("app.tasks.ingestion_tasks.GeminiAgent")
     @patch("app.tasks.ingestion_tasks.get_db")
     def test_ingest_file_deletes_file_on_success(
         self,
         mock_get_db: MagicMock,
         mock_gemini_agent: MagicMock,
-        mock_storage: MagicMock,
+        mock_temp_upload_crud: MagicMock,
         session: Session,
         user: User,
         mock_task_drafts: list[TaskDraft],
@@ -228,9 +197,11 @@ class TestIngestFile:
         mock_agent.analyze_tasks_from_file.return_value = mock_task_drafts
         mock_gemini_agent.return_value = mock_agent
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
-            tmp_file.write(b"fake image content")
-            file_path = tmp_file.name
+        mock_temp_upload_crud.get_upload_record.return_value = TempUpload(
+            id=1,
+            filename="test.jpg",
+            data=b"fake image content",
+        )
 
         # Save original retry method
         original_retry = ingest_file.retry
@@ -240,19 +211,20 @@ class TestIngestFile:
             ingest_file.retry = Mock(side_effect=Exception("Should not retry"))
 
             ingest_file.run(
-                file_path=file_path,
+                upload_id=1,
                 content_type="image/jpeg",
                 language="en",
                 user_id=user.id,  # type: ignore[attr-defined]
             )
 
             # Verify storage.delete was called
-            mock_storage.delete.assert_called_once_with(file_path)
+            mock_temp_upload_crud.delete_upload_record.assert_called_once_with(
+                TempUpload(id=1, filename="test.jpg", data=b"fake image content"),
+                session,
+            )
         finally:
             # Restore original retry method
             ingest_file.retry = original_retry
-            if os.path.exists(file_path):
-                os.unlink(file_path)
 
 
 class TestIngestText:

@@ -6,7 +6,7 @@ from collections import deque
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from app.core.timezone import ensure_utc, get_next_weekday, now_utc
+from app.core.timezone import ensure_utc, get_next_weekday, now_user_timezone, now_utc
 from app.models.availability import WeeklyAvailability
 from app.models.schedule_item import ScheduleItem
 from app.models.task import Task
@@ -847,7 +847,7 @@ class TestPlaceTasksInSlots:
     ):
         unique_tasks = {task.id: task for task in tasks}
         tasks = list(unique_tasks.values())
-        ranked_tasks = rank_tasks(tasks, now_utc())
+        ranked_tasks = rank_tasks(tasks, now_user_timezone("Europe/Berlin"))
         sum_expected_duration_minutes = sum(
             task.expected_duration_minutes for task in tasks
         )

@@ -62,7 +62,7 @@ class TestTask:
         assert task.priority == 0
 
     def test_read(self, session: Session, task: Task) -> None:
-        task_read = TaskRead.model_validate(task)
+        task_read = TaskRead.from_model(task, user_timezone="Europe/Berlin")
 
         assert task_read.id == task.id  # type: ignore[attr-defined]
         assert task_read.user_id == task.user_id
@@ -86,10 +86,12 @@ class TestTask:
         assert "tips" in json_data
         assert "created_at" in json_data
         assert "updated_at" in json_data
+        assert "user_timezone" in json_data
 
         read_from_dict = TaskRead.model_validate(json_data)
         assert read_from_dict.id == task.id  # type: ignore[attr-defined]
         assert read_from_dict.title == task.title
+        assert read_from_dict.user_timezone == "Europe/Berlin"
 
     def test_create_empty_title(self) -> None:
         with pytest.raises(ValueError):
@@ -102,7 +104,9 @@ class TestTask:
     def test_create_empty_description(self) -> None:
         with pytest.raises(ValueError):
             TaskCreate(
-                title="Valid title", description=None, expected_duration_minutes=60  # type: ignore[arg-type]
+                title="Valid title",
+                description=None,
+                expected_duration_minutes=60,  # type: ignore[arg-type]
             )
 
     def test_create_invalid_duration(self) -> None:
@@ -179,7 +183,7 @@ class TestTask:
         session.commit()
         session.refresh(task)
 
-        task_read = TaskRead.model_validate(task)
+        task_read = TaskRead.from_model(task, user_timezone="UTC")
         assert task_read.tips == []
 
     def test_model_validator_naive_deadline(self, session: Session, user: User) -> None:
@@ -203,7 +207,9 @@ class TestTask:
         assert task.deadline.hour == 14
         assert task.deadline.minute == 30
 
-    def test_model_validator_naive_created_at(self, session: Session, user: User) -> None:
+    def test_model_validator_naive_created_at(
+        self, session: Session, user: User
+    ) -> None:
         """Test that naive datetime objects in created_at are converted to UTC"""
         naive_created_at = dt.datetime(2025, 1, 1, 10, 0, 0)
 
@@ -225,7 +231,9 @@ class TestTask:
         assert task.created_at.hour == 10
         assert task.created_at.minute == 0
 
-    def test_model_validator_aware_datetime_preserved(self, session: Session, user: User) -> None:
+    def test_model_validator_aware_datetime_preserved(
+        self, session: Session, user: User
+    ) -> None:
         """Test that timezone-aware datetime objects are preserved by the model validator."""
         aware_deadline = dt.datetime(2025, 12, 25, 14, 30, 0, tzinfo=dt.timezone.utc)
 
@@ -243,7 +251,9 @@ class TestTask:
         assert task.deadline.tzinfo == dt.timezone.utc
         assert task.deadline == aware_deadline
 
-    def test_model_validator_no_datetime_fields(self, session: Session, user: User) -> None:
+    def test_model_validator_no_datetime_fields(
+        self, session: Session, user: User
+    ) -> None:
         task_data = {
             "user_id": user.id,  # type: ignore[attr-defined]
             "title": "Task without datetime fields",
