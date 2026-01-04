@@ -11,6 +11,7 @@ export const ScheduleItemSchema = z.object({
   source: z.string(),
   created_at: z.string(),
   updated_at: z.string(),
+  user_timezone: z.string(),
 });
 
 export type ScheduleItem = z.infer<typeof ScheduleItemSchema>;

@@ -31,21 +31,25 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ChevronDownIcon, X } from "lucide-react";
-import { useTaskDrafts } from "@/context/task-drafts-context";
-import type { TaskDraft } from "@/lib/task-types";
+import { apiRequest } from "@/lib/chrono-client";
+import { toast } from "sonner";
+import { TaskResponseSchema, type Task } from "@/lib/task-types";
 
 interface EditDialogProps {
+  tasks: Task[];
   selectedIndices: Set<number>;
   trigger?: React.ReactNode;
   isSingleEdit?: boolean;
+  onUpdate?: () => void;
 }
 
 export function DraftEditDialog({
+  tasks,
   selectedIndices,
   trigger,
   isSingleEdit = false,
+  onUpdate,
 }: EditDialogProps) {
-  const { drafts, updateDrafts } = useTaskDrafts();
   const [priority, setPriority] = useState<string | undefined>(undefined);
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [time, setTime] = useState<string>("10:30");
@@ -54,15 +58,14 @@ export function DraftEditDialog({
 
   const selectedCount = selectedIndices.size;
 
-  // Initialize form with current values when editing a single draft
   useEffect(() => {
     if (isSingleEdit && selectedCount === 1 && dialogOpen) {
       const index = Array.from(selectedIndices)[0];
-      const draft = drafts[index];
-      if (draft) {
-        setPriority(draft.priority?.toString());
-        if (draft.deadline) {
-          const deadlineDate = new Date(draft.deadline);
+      const task = tasks[index];
+      if (task) {
+        setPriority(task.priority?.toString() || "2");
+        if (task.deadline) {
+          const deadlineDate = new Date(task.deadline);
           setDate(deadlineDate);
           const hours = deadlineDate.getHours().toString().padStart(2, "0");
           const minutes = deadlineDate.getMinutes().toString().padStart(2, "0");
@@ -73,12 +76,11 @@ export function DraftEditDialog({
         }
       }
     } else if (dialogOpen) {
-      // Reset for bulk edit
       setPriority(undefined);
       setDate(undefined);
       setTime("10:30");
     }
-  }, [dialogOpen, isSingleEdit, selectedCount, selectedIndices, drafts]);
+  }, [dialogOpen, isSingleEdit, selectedCount, selectedIndices, tasks]);
 
   const priorityLabels: Record<string, string> = {
     "0": "Highest (0)",
@@ -88,8 +90,11 @@ export function DraftEditDialog({
     "4": "Lowest (4)",
   };
 
-  const handleSave = () => {
-    const updates: Partial<TaskDraft> = {};
+  const handleSave = async () => {
+    const updates: {
+      priority?: number;
+      deadline?: string | null;
+    } = {};
 
     if (priority !== undefined) {
       updates.priority = parseInt(priority, 10);
@@ -101,29 +106,52 @@ export function DraftEditDialog({
       deadline.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
       updates.deadline = deadline.toISOString();
     } else if (isSingleEdit && date === undefined && selectedCount === 1) {
-      // For single edit, if date is cleared, set deadline to null
       const index = Array.from(selectedIndices)[0];
-      const draft = drafts[index];
-      if (draft?.deadline) {
+      const task = tasks[index];
+      if (task?.deadline) {
         updates.deadline = null;
       }
     }
 
-    // Only update if there are changes
-    if (Object.keys(updates).length > 0) {
-      const selectedDrafts = Array.from(selectedIndices).map(
-        (index) => drafts[index]
-      );
-      updateDrafts(selectedDrafts, updates);
+    if (Object.keys(updates).length === 0) {
+      setDialogOpen(false);
+      return;
     }
 
-    // Reset form and close dialog
-    if (!isSingleEdit) {
-      setPriority(undefined);
-      setDate(undefined);
-      setTime("10:30");
+    try {
+      const selectedTasks = Array.from(selectedIndices).map(
+        (index) => tasks[index]
+      );
+
+      await Promise.all(
+        selectedTasks.map((task) =>
+          apiRequest(`/tasks/${task.id}`, TaskResponseSchema, {
+            method: "PUT",
+            body: JSON.stringify(updates),
+          })
+        )
+      );
+
+      toast.success(
+        selectedTasks.length === 1
+          ? "Task updated successfully"
+          : `${selectedTasks.length} tasks updated successfully`
+      );
+
+      if (onUpdate) {
+        onUpdate();
+      }
+
+      if (!isSingleEdit) {
+        setPriority(undefined);
+        setDate(undefined);
+        setTime("10:30");
+      }
+      setDialogOpen(false);
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to update tasks");
     }
-    setDialogOpen(false);
   };
 
   const currentYear = new Date().getFullYear();

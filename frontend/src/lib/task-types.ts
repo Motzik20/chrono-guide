@@ -7,6 +7,7 @@ export const TaskBaseSchema = z.object({
   tips: z.array(z.string()),
   priority: z.number().nullable().optional(),
   deadline: z.string().nullable().optional(),
+  user_timezone: z.string(),
 });
 
 export type TaskDraft = z.infer<typeof TaskBaseSchema>;
@@ -19,6 +20,7 @@ export const TaskResponseSchema = TaskBaseSchema.extend({
   updated_at: z.string(),
   scheduled_at: z.string().nullable().optional(),
   completed_at: z.string().nullable().optional(),
+  committed_at: z.string().nullable().optional(),
 });
 
 export type Task = z.infer<typeof TaskResponseSchema>;

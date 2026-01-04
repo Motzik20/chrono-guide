@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useCallback, useState } from "react";
-import { apiRequest, ApiError } from "@/lib/chrono-client";
+import { apiRequest } from "@/lib/chrono-client";
 import { z } from "zod";
 import { ScheduleResponseSchema, ScheduleResponse } from "@/lib/task-types";
 import { toast } from "sonner";
@@ -38,12 +38,8 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
       const taskWord = taskIds.length === 1 ? "task" : "tasks";
       toast.success(`Successfully deleted ${taskIds.length} ${taskWord}`);
       return true;
-    } catch (error) {
-      if (error instanceof ApiError) {
-        toast.error(`Failed to delete tasks: ${error.message}`);
-      } else {
-        toast.error("Failed to delete tasks. Please try again.");
-      }
+    } catch {
+      toast.error("Failed to delete tasks. Please try again.");
       return false;
     }
   }
@@ -86,12 +82,8 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
       }
 
       return response;
-    } catch (error) {
-      if (error instanceof ApiError) {
-        toast.error(`Failed to schedule tasks: ${error.message}`);
-      } else {
-        toast.error("Failed to schedule tasks. Please try again.");
-      }
+    } catch {
+      toast.error("Failed to schedule tasks. Please try again.");
       return null;
     }
   }

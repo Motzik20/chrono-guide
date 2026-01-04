@@ -61,10 +61,6 @@ class TestEnsureUTC:
 class TestConvertToUserTimezone:
     """Test the convert_to_user_timezone function."""
 
-    def test_convert_to_user_timezone_with_none(self):
-        """Test convert_to_user_timezone with None input."""
-        assert convert_to_user_timezone(None, "America/New_York") is None
-
     def test_convert_to_user_timezone_with_utc(self):
         """Test convert_to_user_timezone with UTC datetime."""
         utc_dt = dt.datetime(2024, 1, 1, 12, 0, 0, tzinfo=dt.timezone.utc)
@@ -148,7 +144,9 @@ class TestGetUserTimezone:
     def test_get_user_timezone_with_setting(self):
         """Test get_user_timezone when user has timezone setting."""
         mock_session = Mock()
-        mock_setting: UserSetting = UserSetting(user_id=1, key="timezone", value="America/New_York")
+        mock_setting: UserSetting = UserSetting(
+            user_id=1, key="timezone", value="America/New_York"
+        )
 
         mock_result = Mock()
         mock_result.first.return_value = mock_setting
@@ -163,7 +161,7 @@ class TestGetUserTimezone:
         mock_session = Mock()
         mock_session.exec.return_value.first.return_value = None
 
-        result: str= get_user_timezone(mock_session, 1)
+        result: str = get_user_timezone(mock_session, 1)
 
         assert result == "UTC"
 

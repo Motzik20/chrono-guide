@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import Any
+from typing import Any, overload
 
 import pytz  # type: ignore[import-untyped]
 from sqlmodel import Session, select
@@ -19,6 +19,16 @@ def ensure_utc(dt_obj: dt.datetime | None) -> dt.datetime | None:
 
     # Timezone-aware datetime - convert to UTC
     return dt_obj.astimezone(dt.timezone.utc)
+
+
+@overload
+def convert_to_user_timezone(utc_dt: None, user_timezone: str) -> None: ...
+
+
+@overload
+def convert_to_user_timezone(
+    utc_dt: dt.datetime, user_timezone: str
+) -> dt.datetime: ...
 
 
 def convert_to_user_timezone(
@@ -45,6 +55,11 @@ def convert_to_user_timezone(
 def now_utc() -> dt.datetime:
     """Get current time in UTC."""
     return dt.datetime.now(dt.timezone.utc)
+
+
+def now_user_timezone(user_timezone: str) -> dt.datetime:
+    """Get current time in user's timezone."""
+    return dt.datetime.now(pytz.timezone(user_timezone))
 
 
 def parse_user_datetime(user_dt: dt.datetime, user_timezone: str) -> dt.datetime:
@@ -83,7 +98,14 @@ def convert_model_datetimes_to_utc(model_data: dict[str, Any]) -> dict[str, Any]
     """
     Convert all datetime fields in a model to UTC using model_validator.
     """
-    datetime_fields = ["created_at", "updated_at", "deadline", "start_time", "end_time"]
+    datetime_fields = [
+        "created_at",
+        "updated_at",
+        "deadline",
+        "start_time",
+        "end_time",
+        "committed_at",
+    ]
 
     for field in datetime_fields:
         if field in model_data and model_data[field] is not None:

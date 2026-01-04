@@ -2,6 +2,7 @@
 
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { JobProvider } from "@/context/job-context";
 
 export default function DashboardLayout({
   children,
@@ -9,9 +10,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <main className="w-full h-screen">{children}</main>
-    </SidebarProvider>
+    <JobProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <main className="w-full h-screen">{children}</main>
+      </SidebarProvider>
+    </JobProvider>
   );
 }

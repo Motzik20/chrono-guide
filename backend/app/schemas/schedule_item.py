@@ -2,6 +2,8 @@ import datetime as dt
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.models.schedule_item import ScheduleItem
+
 
 class ScheduleItemBase(BaseModel):
     start_time: dt.datetime | None = None
@@ -51,3 +53,36 @@ class ScheduleItemRead(BaseModel):
     source: str = "task"
     created_at: dt.datetime
     updated_at: dt.datetime
+
+
+class ScheduleItemResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    user_id: int
+    task_id: int | None = None
+    start_time: dt.datetime
+    end_time: dt.datetime
+    title: str | None = None
+    description: str | None = None
+    source: str = "task"
+    created_at: dt.datetime
+    updated_at: dt.datetime
+    user_timezone: str
+
+    @classmethod
+    def from_model(
+        cls, model: ScheduleItem, user_timezone: str
+    ) -> "ScheduleItemResponse":
+        return cls(
+            id=model.id,  # type: ignore[attr-defined]
+            user_id=model.user_id,
+            task_id=model.task_id,
+            start_time=model.start_time,
+            end_time=model.end_time,
+            title=model.title,
+            description=model.description,
+            source=model.source,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+            user_timezone=user_timezone,
+        )

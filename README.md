@@ -12,7 +12,7 @@ An intelligent task scheduling system that uses AI to extract tasks from content
 ## Tech Stack
 
 - **Backend**: FastAPI, PostgreSQL, SQLModel, Google Gemini AI
-- **Frontend**: Next.js 15, TypeScript, Tailwind CSS, Radix UI
+- **Frontend**: Next.js 15, TypeScript, Tailwind CSS, ShadCN
 - **Infrastructure**: Docker, Docker Compose
 
 ## Prerequisites
@@ -28,27 +28,52 @@ An intelligent task scheduling system that uses AI to extract tasks from content
    cd chrono-guide
    ```
 
-2. **Set up backend environment**
+2. **Infrastructure Setup (Critical)**
+   You need a root `.env` file to handle Docker permissions and ports.
+
+   **Create a file named `.env` in the root folder:**
+   ```env
+   UID=1000
+   GID=1000
+   ```
    
-   Create `backend/.env`:
+   **For macOS / Windows (Docker Desktop):**
+   ```bash
+   # Root .env
+   UID=0
+   GID=0
+   ```
+   
+   **For Linux:**
+   ```bash
+   # Root .env
+   # Run "id -u" and "id -g" to confirm your IDs if needed
+   UID=1000
+   GID=1000
+   ``` 
+
+3. **Backend Secrets Setup**
+   Create `backend/.env` for your application keys:
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
    JWT_SECRET_KEY=your_secret_key_here
-   # CORS_ORIGINS is optional
+   # CORS_ORIGINS is optional, defaults to localhost
    CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
    ```
-   
-   **Note**: 
-   - `CORS_ORIGINS` is optional - defaults to http://localhost:3000,http://127.0.0.1:3000 for dev. For production or different ports, specify: CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
-   - `DATABASE_URL` is automatically set by Docker Compose. You only need to set it in `.env` if running the backend locally (outside Docker).
+4. **Frontend Secrets Setup**
+   Create `backend/.env.local` for the API's url:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:8000
+   ```
 
-3. **Start development environment**
+5. **Start Development Environment**
+   Docker automatically picks up the override file for development.
    ```bash
-   docker-compose --profile dev up --build
+   docker compose up --build
    ```
    *Note: Database migrations run automatically on startup.*
 
-4. **Access the application**
+6. **Access the application**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Docs: http://localhost:8000/docs
@@ -65,23 +90,17 @@ poetry run uvicorn app.main:app --reload
 
 ### Frontend
 ```bash
-cd frontend
-pnpm install
-# Create .env.local with NEXT_PUBLIC_API_URL=http://localhost:8000
-pnpm dev
-```
+# Development (Auto-uses docker-compose.yml + docker-compose.override.yml)
+docker compose up
 
-## Docker Commands
+# Production (Explicitly uses base + prod config)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
-```bash
-# Development
-docker-compose --profile dev up --build
+# Stop containers
+docker compose down
 
-# Production
-NEXT_PUBLIC_API_URL=http://localhost:8000 docker-compose --profile prod up --build
-
-# Database migrations (Automatically runs on startup, but can be run manually)
-docker-compose exec api-dev poetry run alembic upgrade head
+# Database migrations (Manual run)
+docker compose exec api poetry run alembic upgrade head
 ```
 
 ## Project Structure
@@ -96,6 +115,7 @@ chrono-guide/
 │   │   ├── models/   # Database models
 │   │   ├── schemas/  # Pydantic schemas
 │   │   └── services/ # Business logic
+│   │   └── tasks/    # Celery Tasks
 │   ├── scripts/      # Startup and utility scripts
 │   └── tests/        # Test suite
 ├── frontend/          # Next.js frontend
@@ -107,6 +127,10 @@ chrono-guide/
 ```
 
 ## Environment Variables
+
+### Infrastructure (`/.env`)
+Controls Docker behavior.
+- `UID`/`GID`: Maps container user to host user (prevents permission errors).
 
 ### Backend (`backend/.env`)
 - `GEMINI_API_KEY` - Google Gemini API key (required)

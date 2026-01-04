@@ -17,89 +17,65 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
- 
-  api-dev:
+
+  redis:
+    image: redis:7-alpine
+    container_name: chrono-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
     build:
       context: ./backend
-      target: dev
-    working_dir: /backend
-    command: ["/bin/bash", "./scripts/start.sh", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     env_file:
       - ./backend/.env
     environment:
-      - DATABASE_URL=postgresql+psycopg://chrono:chrono@db:5432/chrono
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
-    volumes:
-      - ./backend/app:/backend/app
-      - ./backend/alembic.ini:/backend/alembic.ini
-      - ./backend/app/alembic:/backend/app/alembic
-      - ./backend/pyproject.toml:/backend/pyproject.toml
-      - ./backend/poetry.lock:/backend/poetry.lock
-      - ./backend/scripts:/backend/scripts
-    ports:
-      - "8000:8000"
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD:-chrono}@db:5432/${POSTGRES_DB:-chrono}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     depends_on:
       db:
         condition: service_healthy
-    profiles:
-      - dev
+      redis:
+        condition: service_healthy
+    working_dir: /backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - chrono_uploads:/tmp/chrono_uploads
 
-  api-prod:
+  celery-worker:
     build:
       context: ./backend
-      target: prod
-    working_dir: /backend
-    command: ["/bin/bash", "./scripts/start.sh", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     env_file:
       - ./backend/.env
     environment:
-      - DATABASE_URL=postgresql+psycopg://chrono:chrono@db:5432/chrono
-      - CORS_ORIGINS=${CORS_ORIGINS:-}
-    volumes:
-      - ./backend/scripts:/backend/scripts
-    ports:
-      - "8000:8000"
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD:-chrono}@db:5432/${POSTGRES_DB:-chrono}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     depends_on:
       db:
         condition: service_healthy
-    profiles:
-      - prod 
+      redis:
+        condition: service_healthy
+    working_dir: /backend
+    volumes:
+      - chrono_uploads:/tmp/chrono_uploads
 
-  frontend-dev:
+  frontend:
     build:
       context: ./frontend
-      target: dev
     working_dir: /app
-    command: pnpm dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api-dev
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
-    profiles:
-      - dev
-
-  frontend-prod:
-    build:
-      context: ./frontend
-      target: prod
-      args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-    working_dir: /app
-    command: pnpm start
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api-prod
-    profiles:
-      - prod
 
 volumes:
   pgdata:
-
-
+  chrono_uploads:

@@ -21,9 +21,11 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm build
 
 FROM base AS prod
+RUN addgroup -S appgroup && adduser -S -G appgroup
 RUN pnpm install --frozen-lockfile --prod
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./
+USER appuser
 EXPOSE 3000
 CMD ["pnpm", "start"]

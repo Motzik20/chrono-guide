@@ -27,10 +27,10 @@ class GeminiAgent:
             raise ValueError("GEMINI_API_KEY is not set")
         self.client = genai.Client(api_key=api_key)
 
-    async def analyze_tasks_from_file(
+    def analyze_tasks_from_file(
         self, file_request: FileAnalysisRequest
     ) -> list[TaskDraft]:
-        prompt: str = f"From the file, identify and list all tasks. For each task, include: Concise Title, Description, Estimated Duration, and 2-4 actionable Tips derived from the visual context. Respond in {file_request.language}."
+        prompt: str = f"From the file, identify and list all tasks. For each task, include: Concise Title, Description, Expected Duration (in minutes), and 2-4 actionable Tips derived from the visual context. Respond in {file_request.language}."
 
         contents_parts: list[Part] = [
             Part(
@@ -42,15 +42,13 @@ class GeminiAgent:
             Part(text=prompt),
         ]
 
-        response: GenerateContentResponse = (
-            await self.client.aio.models.generate_content(  # type: ignore[arg-type]
-                model="gemini-2.5-flash",
-                contents=contents_parts,
-                config={
-                    "response_mime_type": "application/json",
-                    "response_schema": list[TaskDraft],
-                },
-            )
+        response: GenerateContentResponse = self.client.models.generate_content(  # type: ignore[arg-type]
+            model="gemini-2.5-flash",
+            contents=contents_parts,
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": list[TaskDraft],
+            },
         )
         if response.text is None:
             return []
@@ -60,9 +58,7 @@ class GeminiAgent:
         ]
         return analyzed_tasks
 
-    async def analyze_tasks_from_text(
-        self, text: str, language: str
-    ) -> list[TaskDraft]:
+    def analyze_tasks_from_text(self, text: str, language: str) -> list[TaskDraft]:
         prompt: str = f"From the text, identify and list all tasks. For each task, include: Concise Title, Description, Estimated Duration, and 2-4 actionable Tips derived from the text. Respond in {language}."
 
         contents_parts: list[Part] = [
@@ -70,15 +66,13 @@ class GeminiAgent:
             Part(text=prompt),
         ]
 
-        response: GenerateContentResponse = (
-            await self.client.aio.models.generate_content(  # type: ignore[arg-type]
-                model="gemini-2.5-flash",
-                contents=contents_parts,
-                config={
-                    "response_mime_type": "application/json",
-                    "response_schema": list[TaskDraft],
-                },
-            )
+        response: GenerateContentResponse = self.client.models.generate_content(  # type: ignore[arg-type]
+            model="gemini-2.5-flash",
+            contents=contents_parts,
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": list[TaskDraft],
+            },
         )
         if response.text is None:
             return []

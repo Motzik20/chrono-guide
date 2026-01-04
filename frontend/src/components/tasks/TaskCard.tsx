@@ -17,6 +17,7 @@ import {
 import { Lightbulb } from "lucide-react";
 import { ChevronsUpDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { formatDateTime } from "@/lib/format-dt";
 
 export function TaskCard<T extends TaskBase>({
   task,
@@ -37,12 +38,6 @@ export function TaskCard<T extends TaskBase>({
     "2": "Medium (2)",
     "3": "Low (3)",
     "4": "Lowest (4)",
-  };
-
-  const formatDeadline = () => {
-    if (!task.deadline) return "Not set";
-    const deadlineDate = new Date(task.deadline);
-    return deadlineDate.toLocaleString();
   };
 
   return (
@@ -92,7 +87,11 @@ export function TaskCard<T extends TaskBase>({
             <Label className="text-md">
               <Calendar className="h-4 w-4" /> Deadline
             </Label>
-            <div className="text-muted-foreground">{formatDeadline()}</div>
+            <div className="text-muted-foreground">
+              {task.deadline
+                ? formatDateTime(task.deadline, task.user_timezone)
+                : "Not set"}
+            </div>
           </div>
         </div>
         {task.tips && task.tips.length > 0 && (

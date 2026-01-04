@@ -25,6 +25,9 @@ pytz = "^2025.2"
 python-jose = {extras = ["cryptography"], version = "^3.5.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 icalendar = "^6.3.2"
+celery = "^5.6.1"
+redis = "^7.1.0"
+celery-types = "^0.24.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.4.3,<8.0.0"
@@ -37,6 +40,7 @@ coverage = ">=7.4.3,<8.0.0"
 # --- The sections below are copied directly ---
 pytest-cov = "^6.2.1"
 hypothesis = "^6.138.13"
+flower = "^2.0.1"
 
 [build-system]
 # This section is updated to use Poetry as the build backend
