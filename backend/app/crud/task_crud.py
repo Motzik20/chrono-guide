@@ -157,3 +157,43 @@ def commit_drafts(draft_ids: list[int], user_id: int, session: Session) -> list[
         session.add(draft)
     session.flush()
     return list(drafts)
+
+
+def deschedule_tasks(task_ids: list[int], user_id: int, session: Session) -> None:
+    """
+    Deschedule tasks by setting scheduled_at to None and deleting their schedule items.
+
+    Args:
+        task_ids: List of task IDs to deschedule
+        user_id: User ID to ensure ownership
+        session: Database session
+    """
+    if not task_ids:
+        return
+
+    from app.models.schedule_item import ScheduleItem
+
+    tasks = session.exec(
+        select(Task)
+        .where(Task.id.in_(task_ids))  # type: ignore[union-attr]
+        .where(Task.user_id == user_id)
+    ).all()
+
+    if not tasks:
+        return
+
+    schedule_items = session.exec(
+        select(ScheduleItem)
+        .where(ScheduleItem.task_id.in_(task_ids))  # type: ignore[union-attr]
+        .where(ScheduleItem.user_id == user_id)
+        .where(ScheduleItem.source == "task")
+    ).all()
+
+    for schedule_item in schedule_items:
+        session.delete(schedule_item)
+
+    for task in tasks:
+        task.scheduled_at = None
+        session.add(task)
+
+    session.flush()
