@@ -21,6 +21,8 @@ export const formatDuration = (startTime: string, endTime: string) => {
   return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
 };
 
+/** 
+TODO: this is more of a hack, for traveling its better to recalculate the time in the database.
 export const formatFloatingTime = (dateString: string) => {
   const literalTime = dateString.slice(0, 19);
 
@@ -31,3 +33,4 @@ export const formatFloatingTime = (dateString: string) => {
     timeStyle: "short",
   });
 };
+*/
