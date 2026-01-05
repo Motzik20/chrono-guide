@@ -7,8 +7,9 @@ from sqlmodel import Session
 from app.celery_app import celery_app
 from app.core.auth import get_current_user_id
 from app.core.db import get_db
-from app.crud import task_crud, temp_upload_crud
+from app.crud import celery_job_crud, task_crud, temp_upload_crud
 from app.crud.setting_crud import get_user_setting, get_user_timezone
+from app.models.celery_job import CeleryJob
 from app.models.task import Task
 from app.models.temp_upload import TempUpload
 from app.schemas.job import IngestTaskJob, JobStatus
@@ -58,6 +59,10 @@ async def ingest_file(
         user_id=user_id,
     )
 
+    celery_job_crud.create_celery_job(
+        CeleryJob(id=str(job.id), task_name="ingest_file", user_id=user_id), session
+    )
+
     return JobResponse(job_id=str(job.id))
 
 
@@ -72,6 +77,10 @@ async def ingest_text(
 
     job = ingest_text_task.delay(
         text=text_request.text, language=language, user_id=user_id
+    )
+
+    celery_job_crud.create_celery_job(
+        CeleryJob(id=str(job.id), task_name="ingest_text", user_id=user_id), session
     )
 
     return JobResponse(job_id=str(job.id))
@@ -200,24 +209,22 @@ async def deschedule_tasks(
 @router.get("/jobs/{job_id}", status_code=status.HTTP_200_OK)
 async def get_job_status(
     job_id: str,
-    _user_id: int = Depends(get_current_user_id),
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
 ) -> IngestTaskJob:
     """Get the status of a Celery job."""
+    _celery_job = celery_job_crud.get_celery_job(job_id, user_id, session)
     task_result: AsyncResult[dict[str, Any]] = AsyncResult(job_id, app=celery_app)
-
     # Map Celery states to our JobStatus enum
-    celery_state = task_result.state
-    if celery_state == "PENDING":
-        status_enum = JobStatus.PENDING
-    elif celery_state in ("STARTED", "RETRY"):
-        status_enum = JobStatus.RUNNING
-    elif celery_state == "SUCCESS":
-        status_enum = JobStatus.SUCCESS
-    elif celery_state in ("FAILURE", "REVOKED"):
-        status_enum = JobStatus.FAILED
-    else:
-        status_enum = JobStatus.PENDING
-
+    state_mapping: dict[str, JobStatus] = {
+        "PENDING": JobStatus.PENDING,
+        "STARTED": JobStatus.RUNNING,
+        "RETRY": JobStatus.RUNNING,
+        "SUCCESS": JobStatus.SUCCESS,
+        "FAILURE": JobStatus.FAILED,
+        "REVOKED": JobStatus.FAILED,
+    }
+    status_enum = state_mapping.get(task_result.state, JobStatus.PENDING)
     result: IngestTaskResponse | None = None
     error: str | None = None
 
@@ -237,22 +244,3 @@ async def get_job_status(
         result=result,
         error=error,
     )
-
-
-@router.get("/jobs", status_code=status.HTTP_200_OK)
-async def get_active_jobs(
-    _user_id: int = Depends(get_current_user_id),
-) -> dict[str, Any]:
-    """Get information about active Celery tasks (monitoring endpoint)."""
-    inspect = celery_app.control.inspect()
-
-    active = inspect.active() or {}
-    scheduled = inspect.scheduled() or {}
-    reserved = inspect.reserved() or {}
-
-    return {
-        "active": active,
-        "scheduled": scheduled,
-        "reserved": reserved,
-        "stats": inspect.stats() or {},
-    }

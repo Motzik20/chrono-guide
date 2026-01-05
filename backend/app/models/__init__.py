@@ -1,4 +1,5 @@
 from .availability import DailyWindowModel, WeeklyAvailability
+from .celery_job import CeleryJob
 from .schedule_item import ScheduleItem
 from .task import Task
 from .temp_upload import TempUpload
@@ -13,4 +14,5 @@ __all__ = [
     "ScheduleItem",
     "UserSetting",
     "TempUpload",
+    "CeleryJob",
 ]

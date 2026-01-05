@@ -152,20 +152,20 @@ Controls Docker behavior.
 
 ```bash
 # Backend tests
-docker-compose exec api-dev poetry run pytest
+docker-compose exec api poetry run pytest
 
 # With coverage
-docker-compose exec api-dev poetry run pytest --cov=app
+docker-compose exec api poetry run pytest --cov=app
 ```
 
 ## Database Migrations
 
 ```bash
 # Create migration
-docker-compose exec api-dev poetry run alembic revision --autogenerate -m "description"
+docker-compose exec api poetry run alembic revision --autogenerate -m "description"
 
 # Apply migrations
-docker-compose exec api-dev poetry run alembic upgrade head
+docker-compose exec api poetry run alembic upgrade head
 ```
 
 ## License
