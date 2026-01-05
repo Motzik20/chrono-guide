@@ -54,7 +54,7 @@ def create_schedule_items_from_blocks(
         schedule_items.append(schedule_item)
         session.add(schedule_item)
 
-    session.commit()
+    session.flush()
     for item in schedule_items:
         session.refresh(item)
 

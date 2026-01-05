@@ -29,6 +29,7 @@ interface TaskListProps {
       | "ghost"
       | "link";
     className?: string;
+    icon?: React.ReactNode;
   }>;
   renderEditDialog?: (task: TaskBase, index: number) => React.ReactNode;
   renderBulkEditDialog?: (selectedIndices: Set<number>) => React.ReactNode;
@@ -132,6 +133,7 @@ export default function TaskList({
               className={button.className || "flex-1"}
               onClick={() => handleButtonClick(button.onClick)}
             >
+              {button.icon}
               {button.label}
             </Button>
           ))}

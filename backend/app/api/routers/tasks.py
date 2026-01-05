@@ -168,7 +168,6 @@ async def commit_drafts(
     session: Session = Depends(get_db),
 ) -> TasksCreateResponse:
     tasks = task_crud.commit_drafts(task_ids, user_id, session)
-    session.commit()
     return TasksCreateResponse(
         task_ids=[t.id for t in tasks if t.id],
         created_count=len(tasks),
@@ -184,8 +183,18 @@ async def update_task(
 ) -> TaskRead:
     user_timezone: str = get_user_timezone(user_id, session)
     updated_task = task_crud.update_task(task_id, task_update, user_id, session)
-    session.commit()
     return TaskRead.from_model(updated_task, user_timezone)
+
+
+@router.post("/deschedule", status_code=status.HTTP_200_OK)
+async def deschedule_tasks(
+    task_ids: TasksDelete = Body(...),
+    user_id: int = Depends(get_current_user_id),
+    session: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Deschedule tasks by removing scheduled_at timestamp and deleting schedule items."""
+    task_crud.deschedule_tasks(task_ids.task_ids, user_id, session)
+    return {"descheduled_count": len(task_ids.task_ids)}
 
 
 @router.get("/jobs/{job_id}", status_code=status.HTTP_200_OK)

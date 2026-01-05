@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 interface ScheduleContextType {
   deleteTasks: (taskIds: number[]) => Promise<boolean>;
+  descheduleTasks: (taskIds: number[]) => Promise<boolean>;
   refreshScheduleItems: () => void;
   refreshTrigger: number;
   scheduleTasks: (taskIds: number[]) => Promise<ScheduleResponse | null>;
@@ -88,10 +89,33 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function descheduleTasks(taskIds: number[]): Promise<boolean> {
+    if (taskIds.length === 0) {
+      return true;
+    }
+
+    try {
+      await apiRequest("/tasks/deschedule", z.object({}), {
+        method: "POST",
+        body: JSON.stringify({
+          task_ids: taskIds,
+        }),
+      });
+      refreshScheduleItems();
+      const taskWord = taskIds.length === 1 ? "task" : "tasks";
+      toast.success(`Successfully descheduled ${taskIds.length} ${taskWord}`);
+      return true;
+    } catch {
+      toast.error("Failed to deschedule tasks. Please try again.");
+      return false;
+    }
+  }
+
   return (
     <ScheduleContext.Provider
       value={{
         deleteTasks,
+        descheduleTasks,
         scheduleTasks,
         refreshScheduleItems,
         refreshTrigger,

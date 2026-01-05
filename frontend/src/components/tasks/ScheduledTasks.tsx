@@ -8,10 +8,11 @@ import Link from "next/link";
 import { useSchedule } from "@/context/schedule-context";
 import { useTaskList } from "@/hooks/useTaskLists";
 import { toast } from "sonner";
+import { CalendarX, Trash } from "lucide-react";
 
 export default function ScheduledTasks() {
   const { tasks: scheduledTasks, fetchTasks } = useTaskList("/tasks/scheduled");
-  const { deleteTasks, refreshScheduleItems } = useSchedule();
+  const { deleteTasks, descheduleTasks, refreshScheduleItems } = useSchedule();
 
   const markAsCompleted = useCallback(
     async (selectedIndices: Set<number>) => {
@@ -45,6 +46,21 @@ export default function ScheduledTasks() {
     [scheduledTasks, fetchTasks, refreshScheduleItems]
   );
 
+  const descheduleSelectedTasks = useCallback(
+    async (selectedIndices: Set<number>) => {
+      const selectedTasks = scheduledTasks.filter((task, index) =>
+        selectedIndices.has(index)
+      );
+      const taskIds = selectedTasks.map((task) => task.id);
+      const success = await descheduleTasks(taskIds);
+      if (success) {
+        await fetchTasks();
+        refreshScheduleItems();
+      }
+    },
+    [scheduledTasks, fetchTasks, descheduleTasks, refreshScheduleItems]
+  );
+
   const deleteSelectedTasks = useCallback(
     async (selectedIndices: Set<number>) => {
       const selectedTasks = scheduledTasks.filter((task, index) =>
@@ -75,13 +91,19 @@ export default function ScheduledTasks() {
       }
       actionButtons={[
         {
+          label: "Mark as Completed",
+          onClick: markAsCompleted,
+        },
+        {
+          label: "Deschedule",
+          onClick: descheduleSelectedTasks,
+          icon: <CalendarX className="h-4 w-4" />,
+        },
+        {
           label: "Delete Selected Tasks",
           onClick: deleteSelectedTasks,
           variant: "destructive",
-        },
-        {
-          label: "Mark as Completed",
-          onClick: markAsCompleted,
+          icon: <Trash className="h-4 w-4" />,
         },
       ]}
     />
