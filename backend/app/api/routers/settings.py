@@ -3,7 +3,6 @@ from sqlmodel import Session
 
 from app.core.auth import get_current_user_id
 from app.core.db import get_db
-from app.schemas.availability import WeeklyAvailabilityUpdate
 from app.schemas.user import AnySettingOut, SettingUpdate
 from app.services import settings_service
 
@@ -34,11 +33,4 @@ async def update_settings(
     session: Session = Depends(get_db),
 ) -> AnySettingOut:
     """Update a user setting."""
-    if setting.type == "schedule":
-        availability_update = WeeklyAvailabilityUpdate.model_validate(
-            {"windows": setting.value}
-        )
-        return settings_service.update_availability_setting(
-            user_id, availability_update, session
-        )
     return settings_service.update_setting(user_id, setting, session)
