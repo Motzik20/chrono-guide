@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useSchedule } from "@/context/schedule-context";
 import { useTaskList } from "@/hooks/useTaskLists";
 import { toast } from "sonner";
+import { Trash } from "lucide-react";
 
 export default function ScheduledTasks() {
   const { tasks: scheduledTasks, fetchTasks } = useTaskList("/tasks/scheduled");
@@ -75,13 +76,14 @@ export default function ScheduledTasks() {
       }
       actionButtons={[
         {
+          label: "Mark as Completed",
+          onClick: markAsCompleted,
+        },
+        {
           label: "Delete Selected Tasks",
           onClick: deleteSelectedTasks,
           variant: "destructive",
-        },
-        {
-          label: "Mark as Completed",
-          onClick: markAsCompleted,
+          icon: <Trash className="h-4 w-4" />,
         },
       ]}
     />

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback } from "react";
 import { useSchedule } from "@/context/schedule-context";
 import { useTaskList } from "@/hooks/useTaskLists";
+import { Trash } from "lucide-react";
 
 export default function UnscheduledTasks() {
   const { tasks: unscheduledTasks, fetchTasks } =
@@ -58,6 +59,7 @@ export default function UnscheduledTasks() {
           label: "Delete Selected Tasks",
           onClick: deleteSelectedTasks,
           variant: "destructive",
+          icon: <Trash className="h-4 w-4" />,
         },
         {
           label: "Schedule Selected Tasks",

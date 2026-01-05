@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DraftEditDialog } from "./DraftEditDialog";
 import { apiRequest, ApiError } from "@/lib/chrono-client";
 import { toast } from "sonner";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash } from "lucide-react";
 import TaskList from "./TaskList";
 import { useTaskList } from "@/hooks/useTaskLists";
 
@@ -17,16 +17,16 @@ const commitResponseSchema = z.object({
 export default function TaskDrafts() {
   const { tasks: drafts, fetchTasks } = useTaskList("/tasks/drafts");
 
-  async function commitDrafts() {
+  async function commitDrafts(selectedIndices: Set<number>) {
+    const selectedDrafts = drafts.filter((draft, index) =>
+      selectedIndices.has(index)
+    );
     if (drafts.length === 0) {
       toast.error("No drafts to commit");
       return;
     }
 
-    const draftIds = drafts
-      .filter((draft) => draft.committed_at === null)
-      .map((draft) => draft.id);
-
+    const draftIds = selectedDrafts.map((draft) => draft.id);
     if (draftIds.length === 0) {
       toast.info("All drafts are already committed");
       return;
@@ -90,13 +90,14 @@ export default function TaskDrafts() {
       emptyStateDescription="Task drafts will appear here after ingestion"
       actionButtons={[
         {
-          label: "Commit All Drafts",
+          label: "Commit Selected Drafts",
           onClick: commitDrafts,
         },
         {
-          label: "Delete Selected Tasks",
+          label: "Delete Selected Drafts",
           onClick: deleteSelectedTasks,
           variant: "destructive",
+          icon: <Trash className="h-4 w-4" />,
         },
       ]}
       renderEditDialog={(draft, index) => (
@@ -119,8 +120,9 @@ export default function TaskDrafts() {
           isSingleEdit={false}
           onUpdate={fetchTasks}
           trigger={
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="outline" size="icon" className="flex-1">
               <Pencil className="h-4 w-4" />
+              Bulk Edit
             </Button>
           }
         />
