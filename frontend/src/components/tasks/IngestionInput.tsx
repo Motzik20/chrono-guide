@@ -77,8 +77,8 @@ export default function IngestionInput() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 flex flex-col items-center justify-center">
-      <Card className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-xl w-full space-y-4 flex flex-col items-center justify-center h-full">
+      <Card className="mx-auto w-full h-1/2">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">
             Create Tasks
@@ -87,10 +87,11 @@ export default function IngestionInput() {
             Upload a file or paste text to extract tasks automatically
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 flex flex-col h-full">
           <Tabs
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as "file" | "text")}
+            className="flex-1 flex flex-col"
           >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="file">
@@ -102,10 +103,10 @@ export default function IngestionInput() {
                 Enter Text
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="file" className="mt-4">
+            <TabsContent value="file" className="mt-4 flex-1 flex flex-col">
               <FileInput onSubmit={onFileSubmit} isLoading={isLoading} />
             </TabsContent>
-            <TabsContent value="text" className="mt-4">
+            <TabsContent value="text" className="mt-4 flex-1 flex flex-col">
               <TextInput onSubmit={onTextSubmit} isLoading={isLoading} />
             </TabsContent>
           </Tabs>
@@ -157,20 +158,20 @@ function FileInput({
     <Form {...fileForm}>
       <form
         onSubmit={fileForm.handleSubmit(onSubmit)}
-        className="space-y-4 flex flex-col items-center justify-center"
+        className="space-y-4 flex flex-col flex-1 w-full h-full"
       >
         <FormField
           control={fileForm.control}
           name="file"
           render={({ field: { onChange, ...fieldProps } }) => (
-            <FormItem>
+            <FormItem className="w-full flex-1 flex flex-col">
               <FormLabel>Input File</FormLabel>
-              <FormControl>
+              <FormControl className="h-full">
                 <div
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onClick={handleBrowseFiles}
-                  className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer min-h-[250px] min-w-[350px] flex flex-col items-center justify-center"
+                  className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer  w-full flex flex-col items-center justify-center h-full"
                 >
                   {selectedFile ? (
                     <div className="flex flex-col items-center justify-center">
@@ -270,20 +271,20 @@ function TextInput({
     <Form {...textForm}>
       <form
         onSubmit={textForm.handleSubmit(onSubmit)}
-        className="space-y-4 flex flex-col items-center justify-center"
+        className="space-y-4 flex flex-col flex-1 w-full"
       >
         <FormField
           control={textForm.control}
           name="text"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="w-full flex-1 flex flex-col">
               <FormLabel>Input Text</FormLabel>
-              <FormControl>
-                <div className="border-2 rounded-lg text-center hover:border-primary transition-colors min-h-[250px] w-[350px] items-center justify-center">
+              <FormControl className="flex-1 flex flex-col">
+                <div className="border-2 rounded-lg hover:border-primary transition-colors min-h-[250px] w-full flex-1 flex flex-col">
                   <Textarea
                     {...field}
                     placeholder="Enter your text here..."
-                    className="min-h-[200px] w-full h-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none overflow-y-auto break-words whitespace-pre-wrap"
+                    className="flex-1 min-h-[200px] w-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none overflow-y-auto break-words whitespace-pre-wrap"
                   />
                 </div>
               </FormControl>
