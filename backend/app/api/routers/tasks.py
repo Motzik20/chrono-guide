@@ -36,7 +36,12 @@ async def ingest_file(
     session: Session = Depends(get_db),
 ) -> JobResponse:
     assert user_id
-    allowed_content_types: list[str] = ["image/jpeg", "image/png", "application/pdf"]
+    allowed_content_types: list[str] = [
+        "image/jpeg",
+        "image/png",
+        "application/pdf",
+        "text/plain",
+    ]
     content_type: str | None = file.content_type
     if content_type is None:
         raise HTTPException(status_code=400, detail="No valid file content type")

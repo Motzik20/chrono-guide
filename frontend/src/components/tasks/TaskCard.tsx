@@ -17,7 +17,7 @@ import {
 import { Lightbulb } from "lucide-react";
 import { ChevronsUpDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { formatDateTime } from "@/lib/format-dt";
+import { formatDateTime, formatMinuteDuration } from "@/lib/format-dt";
 
 export function TaskCard<T extends TaskBase>({
   task,
@@ -66,10 +66,7 @@ export function TaskCard<T extends TaskBase>({
             <Clock className="h-4 w-4" /> Estimated Duration
           </Label>
           <div className="flex items-center gap-2 text-muted-foreground">
-            <span>
-              {task.expected_duration_minutes}{" "}
-              {task.expected_duration_minutes === 1 ? "minute" : "minutes"}
-            </span>
+            <span>{formatMinuteDuration(task.expected_duration_minutes)}</span>
           </div>
         </div>
 

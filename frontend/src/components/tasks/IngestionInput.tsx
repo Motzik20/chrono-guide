@@ -27,7 +27,12 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 
-const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+const ACCEPTED_FILE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "application/pdf",
+  "text/plain",
+];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const fileSchema = z.object({
@@ -36,7 +41,7 @@ const fileSchema = z.object({
     .refine((file) => file.size <= MAX_FILE_SIZE, "File must be less than 10MB")
     .refine(
       (file) => ACCEPTED_FILE_TYPES.includes(file.type),
-      "Only JPG, PNG, and PDF files are allowed"
+      "Only JPG, PNG, PDF, and TXT files are allowed"
     ),
 });
 
@@ -78,7 +83,7 @@ export default function IngestionInput() {
 
   return (
     <div className="mx-auto max-w-xl w-full space-y-4 flex flex-col items-center justify-center h-full">
-      <Card className="mx-auto w-full h-1/2">
+      <Card className="mx-auto w-full h-3/4">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">
             Create Tasks
@@ -202,7 +207,7 @@ function FileInput({
                         Drag and drop a file here, or click to browse
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Supported: JPEG, PNG, PDF (max 10MB)
+                        Supported: JPEG, PNG, PDF, TXT (max 10MB)
                       </p>
                     </div>
                   )}
