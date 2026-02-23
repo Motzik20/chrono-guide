@@ -11,7 +11,15 @@ import {
   SidebarMenu,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Home, List, Settings, Calendar, LogOut, Clock, PanelLeft } from "lucide-react";
+import {
+  Home,
+  List,
+  Settings,
+  Calendar,
+  LogOut,
+  Clock,
+  PanelLeft,
+} from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -41,7 +49,6 @@ const sidebar_items = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
   const { logout } = useAuth();
   const pathname = usePathname();
 
@@ -55,8 +62,6 @@ export function AppSidebar() {
     }
     return pathname.startsWith(href);
   };
-
-  const isCollapsed = state === "collapsed";
 
   const { toggleSidebar } = useSidebar();
 
@@ -87,10 +92,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={active}
-                    className={cn(
-                      "py-3 text-base",
-                      active && "font-medium"
-                    )}
+                    className={cn("py-3 text-base", active && "font-medium")}
                   >
                     <Link href={item.href}>
                       <Icon className="!h-5 !w-5 shrink-0" />
