@@ -55,6 +55,9 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
   const toastShownRef = useRef<Set<string>>(new Set());
 
   const getInitialJobs = (): TrackedJob[] => {
+    if (typeof window === "undefined") {
+      return [];
+    }
     const storedJobs = localStorage.getItem("background-jobs");
     if (storedJobs) {
       return JSON.parse(storedJobs);
@@ -65,7 +68,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
 
   const [jobs, setJobs] = useState<TrackedJob[]>(() => getInitialJobs());
   useEffect(() => {
-    if (isHydrated) {
+    if (isHydrated && typeof window !== "undefined") {
       localStorage.setItem("background-jobs", JSON.stringify(jobs));
     }
   }, [jobs, isHydrated]);

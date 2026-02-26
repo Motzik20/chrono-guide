@@ -87,7 +87,7 @@ export function AppSidebar() {
               return (
                 <SidebarMenuItem key={item.href} className="relative">
                   {active && (
-                    <div className="absolute left-[-16px] top-1/2 -translate-y-1/2 w-1 h-7 bg-foreground rounded-r-full" />
+                    <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-1 h-7 bg-foreground rounded-r-full" />
                   )}
                   <SidebarMenuButton
                     asChild
@@ -95,7 +95,7 @@ export function AppSidebar() {
                     className={cn("py-3 text-base", active && "font-medium")}
                   >
                     <Link href={item.href}>
-                      <Icon className="!h-5 !w-5 shrink-0" />
+                      <Icon className="h-5! w-5! shrink-0" />
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -112,7 +112,7 @@ export function AppSidebar() {
               onClick={toggleSidebar}
               className="py-3 text-base text-muted-foreground"
             >
-              <PanelLeft className="!h-5 !w-5 shrink-0" />
+              <PanelLeft className="h-5! w-5! shrink-0" />
               <span>Collapse</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -121,7 +121,7 @@ export function AppSidebar() {
               onClick={handleLogout}
               className="py-3 text-base text-muted-foreground hover:text-destructive hover:bg-destructive/10"
             >
-              <LogOut className="!h-5 !w-5 shrink-0" />
+              <LogOut className="h-5! w-5! shrink-0" />
               <span>Logout</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
