@@ -5,10 +5,9 @@ services:
     build:
       target: dev
     user: "${UID:-1000}:${GID:-1000}"
+    entrypoint: ["/backend/scripts/start.sh"]
     command:
       [
-        "/bin/bash",
-        "./scripts/start.sh",
         "uvicorn",
         "app.main:app",
         "--host",
@@ -37,6 +36,7 @@ services:
       ["poetry", "run", "celery", "-A", "app.celery_app", "worker", "--loglevel=info"]
     environment:
       HOME: /tmp
+      POETRY_VIRTUALENVS_CREATE: "false"
     volumes:
       - ./backend/app:/backend/app
       - ./backend/pyproject.toml:/backend/pyproject.toml

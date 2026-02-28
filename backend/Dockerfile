@@ -12,6 +12,8 @@ FROM base AS dev
 RUN poetry install --no-interaction --no-ansi
 COPY ./app ./app
 COPY alembic.ini ./
+COPY ./scripts ./scripts
+RUN chmod +x /backend/scripts/start.sh
 
 ENV HOME=/tmp
 EXPOSE 8000
@@ -22,12 +24,13 @@ RUN addgroup --system appgroup && adduser --system --group appuser
 RUN poetry install --without dev --no-interaction --no-ansi
 COPY ./app ./app
 COPY alembic.ini ./
+COPY ./scripts ./scripts
 
-RUN printf '#!/bin/bash\nset -e\necho "Running database migrations..."\npoetry run alembic upgrade head\necho "Starting server..."\nexec "$@"\n' > /backend/entrypoint.sh && chmod +x /backend/entrypoint.sh
+RUN chmod +x /backend/scripts/start.sh
 RUN chown -R appuser:appgroup /backend
 # Set HOME for appuser and ensure Poetry doesn't create virtualenvs
 ENV HOME=/tmp
 ENV POETRY_VIRTUALENVS_CREATE=false
 USER appuser
 EXPOSE 8000
-ENTRYPOINT ["/backend/entrypoint.sh"]
+ENTRYPOINT ["/backend/scripts/start.sh"]

@@ -10,7 +10,8 @@ import {
   useRef,
 } from "react";
 import { z } from "zod";
-import { apiRequest } from "@/lib/chrono-client";
+import { apiRequest, ApiError } from "@/lib/chrono-client";
+import { useAuth } from "./auth-context";
 
 const jobResponseSchema = z.object({
   job_id: z.string(),
@@ -53,9 +54,10 @@ export const JobContext = createContext<JobContextType | undefined>(undefined);
 export function JobProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const toastShownRef = useRef<Set<string>>(new Set());
+  const { isAuthenticated } = useAuth();
 
   const getInitialJobs = (): TrackedJob[] => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || !isAuthenticated) {
       return [];
     }
     const storedJobs = localStorage.getItem("background-jobs");
@@ -65,13 +67,20 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     setIsHydrated(true);
     return [];
   };
-
   const [jobs, setJobs] = useState<TrackedJob[]>(() => getInitialJobs());
+
   useEffect(() => {
     if (isHydrated && typeof window !== "undefined") {
       localStorage.setItem("background-jobs", JSON.stringify(jobs));
     }
   }, [jobs, isHydrated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      localStorage.removeItem("background-jobs");
+      toastShownRef.current.clear();
+    }
+  }, [isAuthenticated]);
 
   const dismissJob = useCallback((jobId: string) => {
     setJobs((prevJobs) => prevJobs.filter((job) => job.id !== jobId));
@@ -143,8 +152,15 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
               updateJobStatus(job, jobStatus);
             }
           } catch (error) {
-            console.error("Failed to fetch job status:", error);
-            // Don't throw - just log the error
+            // If job doesn't belong to current user (403) or doesn't exist (404), remove it
+            if (
+              error instanceof ApiError &&
+              (error.status === 403 || error.status === 404)
+            ) {
+              setJobs((prevJobs) => prevJobs.filter((j) => j.id !== job.id));
+            } else {
+              console.error("Failed to fetch job status:", error);
+            }
           }
         })
       );
