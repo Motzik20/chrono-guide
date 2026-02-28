@@ -38,12 +38,31 @@ class TestIngestFile:
     ) -> None:
         """Test file ingestion fails with invalid content type."""
         file_content = b"fake content"
-        files = {"file": ("test.txt", file_content, "text/plain")}
+        files = {"file": ("test.json", file_content, "application/json")}
 
         response = client.post("/tasks/ingest/file", files=files)
 
         assert response.status_code == 400
         assert "Invalid file content type" in response.json()["detail"]
+
+    @patch("app.api.routers.tasks.ingest_file_task")
+    def test_ingest_txt_content_type(
+        self,
+        mock_ingest_task: MagicMock,
+        client: TestClient,
+        mock_user_id: int,
+    ) -> None:
+        """Test file ingestion fails with invalid content type."""
+        mock_job = MagicMock()
+        mock_job.id = "test-job-id-txt"
+        mock_ingest_task.delay.return_value = mock_job
+
+        file_content = b"fake content"
+        files = {"file": ("test.txt", file_content, "text/plain")}
+
+        response = client.post("/tasks/ingest/file", files=files)
+
+        assert response.status_code == 200
 
     @patch("app.api.routers.tasks.ingest_file_task")
     def test_ingest_file_png_success(

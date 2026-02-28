@@ -45,7 +45,7 @@ export function JobList() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 w-full h-full">
+    <div className="mx-auto space-y-4 w-full h-full">
       <Card className="mx-auto max-w-2xl w-full h-full">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">

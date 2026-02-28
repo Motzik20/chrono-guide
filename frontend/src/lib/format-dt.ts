@@ -13,11 +13,15 @@ export const formatDuration = (startTime: string, endTime: string) => {
   const diffMs = end.getTime() - start.getTime();
   const diffMins = Math.round(diffMs / (1000 * 60));
 
-  if (diffMins < 60) {
-    return `${diffMins} min`;
+  return formatMinuteDuration(diffMins);
+};
+
+export const formatMinuteDuration = (timeMinutes: number) => {
+  if (timeMinutes < 60) {
+    return `${timeMinutes} min`;
   }
-  const hours = Math.floor(diffMins / 60);
-  const mins = diffMins % 60;
+  const hours = Math.floor(timeMinutes / 60);
+  const mins = timeMinutes % 60;
   return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
 };
 

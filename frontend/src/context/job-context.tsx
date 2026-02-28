@@ -52,7 +52,6 @@ interface JobContextType {
 export const JobContext = createContext<JobContextType | undefined>(undefined);
 
 export function JobProvider({ children }: { children: React.ReactNode }) {
-  const [jobs, setJobs] = useState<TrackedJob[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
   const toastShownRef = useRef<Set<string>>(new Set());
   const { isAuthenticated } = useAuth();
@@ -65,18 +64,21 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      const storedJobs = localStorage.getItem("background-jobs");
-      if (storedJobs) {
-        setJobs(JSON.parse(storedJobs));
-      }
+  const getInitialJobs = (): TrackedJob[] => {
+    if (typeof window === "undefined" || !isAuthenticated) {
+      return [];
+    }
+    const storedJobs = localStorage.getItem("background-jobs");
+    if (storedJobs) {
+      return JSON.parse(storedJobs);
     }
     setIsHydrated(true);
-  }, [isAuthenticated]);
+    return [];
+  };
 
+  const [jobs, setJobs] = useState<TrackedJob[]>(() => getInitialJobs());
   useEffect(() => {
-    if (isHydrated) {
+    if (isHydrated && typeof window !== "undefined") {
       localStorage.setItem("background-jobs", JSON.stringify(jobs));
     }
   }, [jobs, isHydrated]);

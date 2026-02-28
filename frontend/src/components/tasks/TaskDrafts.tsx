@@ -102,6 +102,7 @@ export default function TaskDrafts() {
       ]}
       renderEditDialog={(draft, index) => (
         <DraftEditDialog
+          key={index.toString()}
           tasks={drafts}
           selectedIndices={new Set([index])}
           isSingleEdit={true}
@@ -115,6 +116,7 @@ export default function TaskDrafts() {
       )}
       renderBulkEditDialog={(selectedIndices) => (
         <DraftEditDialog
+          key={Array.from(selectedIndices).join(",")}
           tasks={drafts}
           selectedIndices={selectedIndices}
           isSingleEdit={false}
