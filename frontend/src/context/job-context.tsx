@@ -56,14 +56,6 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
   const toastShownRef = useRef<Set<string>>(new Set());
   const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setJobs([]);
-      localStorage.removeItem("background-jobs");
-      toastShownRef.current.clear();
-    }
-  }, [isAuthenticated]);
-
   const getInitialJobs = (): TrackedJob[] => {
     if (typeof window === "undefined" || !isAuthenticated) {
       return [];
@@ -75,13 +67,21 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     setIsHydrated(true);
     return [];
   };
-
   const [jobs, setJobs] = useState<TrackedJob[]>(() => getInitialJobs());
+
   useEffect(() => {
     if (isHydrated && typeof window !== "undefined") {
       localStorage.setItem("background-jobs", JSON.stringify(jobs));
     }
   }, [jobs, isHydrated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setJobs([]);
+      localStorage.removeItem("background-jobs");
+      toastShownRef.current.clear();
+    }
+  }, [isAuthenticated]);
 
   const dismissJob = useCallback((jobId: string) => {
     setJobs((prevJobs) => prevJobs.filter((job) => job.id !== jobId));
