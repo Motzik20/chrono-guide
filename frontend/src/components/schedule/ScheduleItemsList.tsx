@@ -73,7 +73,7 @@ export default function ScheduleItemsList() {
 
   if (isLoading) {
     return (
-      <Card className="mx-auto max-w-2xl w-full">
+      <Card className="mx-auto w-full">
         <CardHeader>
           <CardTitle>Schedule</CardTitle>
           <CardDescription>Loading schedule items...</CardDescription>
@@ -83,8 +83,8 @@ export default function ScheduleItemsList() {
   }
 
   return (
-    <div className="flex flex-col h-full mx-auto max-w-2xl w-full">
-      <Card className="flex-shrink-0 mb-4">
+    <div className="flex flex-col h-full mx-auto w-full">
+      <Card className="shrink-0 mb-4">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>

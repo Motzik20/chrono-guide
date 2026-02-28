@@ -31,11 +31,18 @@
       "source.organizeImports": "explicit"
     }
   },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.validate": [
+    "typescript",
+    "typescriptreact"
+  ],
   "prettier.requireConfig": true,
   "files.eol": "\n",
-  "python.testing.pytestArgs": ["backend"],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.analysis.typeCheckingMode": "strict",
-  "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
+  "python.testing.pytestArgs": ["."],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.analysis.typeCheckingMode": "strict",
+  "python.analysis.extraPaths": ["${workspaceFolder}/backend"]
 }

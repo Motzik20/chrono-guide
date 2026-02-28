@@ -79,7 +79,7 @@ export default function TaskList({
 
   if (tasks.length === 0) {
     return (
-      <Card className="mx-auto w-1/2 max-w-2xl">
+      <Card className="mx-auto w-1/2">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">
             {emptyStateTitle}
@@ -91,7 +91,7 @@ export default function TaskList({
   }
 
   return (
-    <div className="flex flex-col h-full mx-auto max-w-2xl w-full">
+    <div className="flex flex-col h-full mx-auto w-full">
       <Card className="flex-shrink-0 mb-4">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="flex justify-between">

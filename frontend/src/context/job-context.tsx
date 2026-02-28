@@ -51,20 +51,24 @@ interface JobContextType {
 export const JobContext = createContext<JobContextType | undefined>(undefined);
 
 export function JobProvider({ children }: { children: React.ReactNode }) {
-  const [jobs, setJobs] = useState<TrackedJob[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
   const toastShownRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
+  const getInitialJobs = (): TrackedJob[] => {
+    if (typeof window === "undefined") {
+      return [];
+    }
     const storedJobs = localStorage.getItem("background-jobs");
     if (storedJobs) {
-      setJobs(JSON.parse(storedJobs));
+      return JSON.parse(storedJobs);
     }
     setIsHydrated(true);
-  }, []);
+    return [];
+  };
 
+  const [jobs, setJobs] = useState<TrackedJob[]>(() => getInitialJobs());
   useEffect(() => {
-    if (isHydrated) {
+    if (isHydrated && typeof window !== "undefined") {
       localStorage.setItem("background-jobs", JSON.stringify(jobs));
     }
   }, [jobs, isHydrated]);

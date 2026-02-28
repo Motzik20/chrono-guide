@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -47,41 +47,41 @@ export function DraftEditDialog({
   tasks,
   selectedIndices,
   trigger,
-  isSingleEdit = false,
   onUpdate,
 }: EditDialogProps) {
-  const [priority, setPriority] = useState<string | undefined>(undefined);
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [time, setTime] = useState<string>("10:30");
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  const selectedCount = selectedIndices.size;
-
-  useEffect(() => {
-    if (isSingleEdit && selectedCount === 1 && dialogOpen) {
+  const isSingleEdit = selectedIndices.size === 1;
+  const getInitialPriority = () => {
+    if (isSingleEdit) {
+      const index = Array.from(selectedIndices)[0];
+      return tasks[index]?.priority?.toString() || "2";
+    }
+    return undefined;
+  };
+  const getInitialDate = () => {
+    if (isSingleEdit) {
       const index = Array.from(selectedIndices)[0];
       const task = tasks[index];
-      if (task) {
-        setPriority(task.priority?.toString() || "2");
-        if (task.deadline) {
-          const deadlineDate = new Date(task.deadline);
-          setDate(deadlineDate);
-          const hours = deadlineDate.getHours().toString().padStart(2, "0");
-          const minutes = deadlineDate.getMinutes().toString().padStart(2, "0");
-          setTime(`${hours}:${minutes}`);
-        } else {
-          setDate(undefined);
-          setTime("10:30");
-        }
-      }
-    } else if (dialogOpen) {
-      setPriority(undefined);
-      setDate(undefined);
-      setTime("10:30");
+      const deadline = task.deadline ? new Date(task.deadline) : undefined;
+      return deadline;
     }
-  }, [dialogOpen, isSingleEdit, selectedCount, selectedIndices, tasks]);
+    return undefined;
+  };
 
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [priority, setPriority] = useState<string | undefined>(() =>
+    getInitialPriority()
+  );
+  const [date, setDate] = useState<Date | undefined>(() => getInitialDate());
+  const getInitalTime = () => {
+    if (isSingleEdit && date) {
+      const hours = date.getHours().toString().padStart(2, "0");
+      const minutes = date.getMinutes().toString().padStart(2, "0");
+      return `${hours}:${minutes}`;
+    }
+    return "10:30";
+  };
+  const [time, setTime] = useState<string>(() => getInitalTime());
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const priorityLabels: Record<string, string> = {
     "0": "Highest (0)",
     "1": "High (1)",
@@ -105,7 +105,7 @@ export function DraftEditDialog({
       const deadline = new Date(date);
       deadline.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
       updates.deadline = deadline.toISOString();
-    } else if (isSingleEdit && date === undefined && selectedCount === 1) {
+    } else if (isSingleEdit && date === undefined) {
       const index = Array.from(selectedIndices)[0];
       const task = tasks[index];
       if (task?.deadline) {
@@ -159,7 +159,7 @@ export function DraftEditDialog({
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>
             {isSingleEdit ? "Edit Task" : "Bulk Edit Tasks"}
@@ -167,8 +167,8 @@ export function DraftEditDialog({
           <DialogDescription>
             {isSingleEdit
               ? "Update priority and deadline for this task."
-              : `Update priority and deadline for ${selectedCount} selected${
-                  selectedCount === 1 ? " task" : " tasks"
+              : `Update priority and deadline for ${selectedIndices.size} selected${
+                  isSingleEdit ? " task" : " tasks"
                 }. Leave fields empty to keep current values.`}
           </DialogDescription>
         </DialogHeader>
