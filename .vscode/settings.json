@@ -44,5 +44,10 @@
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "python.analysis.typeCheckingMode": "strict",
-  "python.analysis.extraPaths": ["${workspaceFolder}/backend"]
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend"
+  ],
+  "python-envs.defaultEnvManager": "ms-python.python:poetry",
+  "python-envs.pythonProjects": [],
+  "python-envs.defaultPackageManager": "ms-python.python:poetry"
 }

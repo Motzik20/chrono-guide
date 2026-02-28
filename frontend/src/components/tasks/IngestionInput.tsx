@@ -285,11 +285,11 @@ function TextInput({
             <FormItem className="w-full flex-1 flex flex-col">
               <FormLabel>Input Text</FormLabel>
               <FormControl className="flex-1 flex flex-col">
-                <div className="border-2 rounded-lg hover:border-primary transition-colors min-h-[250px] w-full flex-1 flex flex-col">
+                <div className="border-2 rounded-lg hover:border-primary transition-colors min-h-62.5 w-full flex-1 flex flex-col">
                   <Textarea
                     {...field}
                     placeholder="Enter your text here..."
-                    className="flex-1 min-h-[200px] w-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none overflow-y-auto break-words whitespace-pre-wrap"
+                    className="flex-1 min-h-50 w-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none overflow-y-auto wrap-break-word whitespace-pre-wrap"
                   />
                 </div>
               </FormControl>
