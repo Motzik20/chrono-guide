@@ -77,7 +77,6 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      setJobs([]);
       localStorage.removeItem("background-jobs");
       toastShownRef.current.clear();
     }
