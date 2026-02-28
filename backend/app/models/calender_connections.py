@@ -17,7 +17,7 @@ class CalendarConnection(SQLModel, table=True):
     label: str = Field(sa_column=Column(String(100), nullable=False)) # human readable name that can be assigne in the app
     calendar_url: str = Field(sa_column=Column(Text, nullable=False))
     username: str | None = Field(sa_column=Column(String(255), nullable=True))
-    key_id: str | None = Field(sa_column=Column(String(20), nullable=True))
+    key_id: str | None = Field(default="V1_KEY", sa_column=Column(String(20), nullable=True, server_default="V1_KEY")) # e.g. for caldav connections, to specify which key from the key management table to use
     secret: str | None = Field(sa_column=Column(Text, nullable=True))
     last_error: str | None = Field(sa_column=Column(Text, nullable=True))
     is_active: bool = Field(default=True, sa_column=Column(Boolean, nullable=False)) # Disable connection without deleting it

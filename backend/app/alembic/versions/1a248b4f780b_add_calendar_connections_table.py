@@ -1,18 +1,19 @@
 """add calendar connections table
 
-Revision ID: d8fd5d12bc73
-Revises: fb4f1d257e34
-Create Date: 2026-02-28 11:21:31.921990
+Revision ID: 1a248b4f780b
+Revises: 4830093f7fc4
+Create Date: 2026-02-28 13:57:03.648000
 
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'd8fd5d12bc73'
+revision: str = '1a248b4f780b'
 down_revision: Union[str, None] = '4830093f7fc4'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -28,7 +29,7 @@ def upgrade() -> None:
     sa.Column('label', sa.String(length=100), nullable=False),
     sa.Column('calendar_url', sa.Text(), nullable=False),
     sa.Column('username', sa.String(length=255), nullable=True),
-    sa.Column('key_id', sa.String(length=20), nullable=True),
+    sa.Column('key_id', sa.String(length=20), server_default='V1_KEY', nullable=True),
     sa.Column('secret', sa.Text(), nullable=True),
     sa.Column('last_error', sa.Text(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=False),
