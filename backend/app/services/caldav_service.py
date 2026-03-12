@@ -31,3 +31,4 @@ def export_calendar_from_schedule_items(schedule_items: list[ScheduleItem]) -> b
         event = _generate_event(schedule_item)
         calendar.add_component(event)
     return calendar.to_ical()
+

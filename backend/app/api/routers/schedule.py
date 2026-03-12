@@ -18,7 +18,7 @@ from app.models.task import Task
 from app.schemas.schedule_item import ScheduleItemCreate, ScheduleItemResponse
 from app.schemas.schedule_requests import ScheduleGenerateRequest
 from app.services.greedy_scheduler import GreedyScheduler
-from app.services.ical_service import export_calendar_from_schedule_items
+from app.services.caldav_service import export_calendar_from_schedule_items
 from app.services.protocols import ChronoScheduler
 from app.services.scheduling_types import SchedulingConfig, SchedulingResponse
 from app.services.scheduling_utils import schedule_blocks_to_schedule_items
@@ -30,7 +30,7 @@ def get_task_scheduler() -> ChronoScheduler:
     """Dependency injection for ChronoScheduler. Returns GreedyScheduler by default."""
     return GreedyScheduler()
 
-
+#TODO: move this export endpoint into the calendar folder
 @router.get("/export")
 async def export_schedule(
     user_id: int = Depends(get_current_user_id), session: Session = Depends(get_db)
