@@ -45,3 +45,7 @@ def login(user: UserLogin, session: Session) -> dict[str, str]:
         data={"sub": str(existing_user.id), "email": existing_user.email}
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+def get_users(session: Session) -> list[User]:
+    return list(session.exec(select(User)).all())

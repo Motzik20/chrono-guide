@@ -1,29 +1,26 @@
 import datetime as dt
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.schedule_item import ScheduleItem
 
 
-class ScheduleItemBase(BaseModel):
-    start_time: dt.datetime | None = None
-    end_time: dt.datetime | None = None
+class ScheduleItemFields(BaseModel):
     title: str | None = None
     description: str | None = None
     source: str | None = Field(default="task")
+    external_id: str | None = None
+    connection_id: int | None = None
 
-    @field_validator("start_time", "end_time")
-    @classmethod
-    def times_must_be_future(cls, v: dt.datetime) -> dt.datetime:
-        if v <= dt.datetime.now(dt.timezone.utc):
-            raise ValueError("Schedule times must be in the future")
-        return v
+
+class ScheduleItemBase(ScheduleItemFields):
+    start_time: dt.datetime
+    end_time: dt.datetime
 
     @model_validator(mode="after")
     def end_after_start(self) -> "ScheduleItemBase":
-        if self.start_time and self.end_time:
-            if self.end_time <= self.start_time:
-                raise ValueError("End time must be after start time")
+        if self.end_time <= self.start_time:
+            raise ValueError("End time must be after start time")
         return self
 
 
@@ -32,13 +29,16 @@ class ScheduleItemCreate(ScheduleItemBase):
     user_id: int
 
 
-class ScheduleItemUpdate(ScheduleItemBase):
+class ScheduleItemUpdate(ScheduleItemFields):
     task_id: int | None = None
     start_time: dt.datetime | None = None
     end_time: dt.datetime | None = None
-    title: str | None = None
-    description: str | None = None
-    source: str | None = None
+
+    @model_validator(mode="after")
+    def end_after_start(self) -> "ScheduleItemUpdate":
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
+            raise ValueError("End time must be after start time")
+        return self
 
 
 class ScheduleItemRead(BaseModel):
@@ -51,6 +51,8 @@ class ScheduleItemRead(BaseModel):
     title: str | None = None
     description: str | None = None
     source: str = "task"
+    external_id: str | None = None
+    connection_id: int | None = None
     created_at: dt.datetime
     updated_at: dt.datetime
 
@@ -65,6 +67,8 @@ class ScheduleItemResponse(BaseModel):
     title: str | None = None
     description: str | None = None
     source: str = "task"
+    external_id: str | None = None
+    connection_id: int | None = None
     created_at: dt.datetime
     updated_at: dt.datetime
     user_timezone: str
@@ -82,6 +86,8 @@ class ScheduleItemResponse(BaseModel):
             title=model.title,
             description=model.description,
             source=model.source,
+            external_id=model.external_id,
+            connection_id=model.connection_id,
             created_at=model.created_at,
             updated_at=model.updated_at,
             user_timezone=user_timezone,

@@ -17,6 +17,13 @@ services:
       ["celery", "-A", "app.celery_app", "worker", "--loglevel=info"]
     restart: always
 
+  celery-beat:
+    build:
+      target: prod
+    command:
+      ["poetry", "run", "celery", "-A", "app.celery_app", "beat", "--loglevel=info"]
+    restart: always
+
   frontend:
     build:
       target: prod

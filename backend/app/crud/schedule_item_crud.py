@@ -59,3 +59,59 @@ def create_schedule_items_from_blocks(
         session.refresh(item)
 
     return schedule_items
+
+
+def sync_schedule_items_to_db(
+    schedule_items: list[ScheduleItemCreate], user_id: int, session: Session
+) -> list[ScheduleItem]:
+    """Sync schedule items for a user. This will create new items, update existing ones, and delete items that are no longer present."""
+    existing_items = get_user_schedule_items(user_id=user_id, session=session)
+    existing_items_map: dict[tuple[str, str, int], ScheduleItem] = {
+        (item.source, item.external_id, item.connection_id): item
+        for item in existing_items
+        if item.external_id is not None and item.connection_id is not None
+    }
+
+    new_items: list[ScheduleItem] = []
+    for item in schedule_items:
+        if (
+            item.external_id is None
+            or item.connection_id is None
+            or item.source is None
+        ):
+            continue
+        key: tuple[str, str, int] = (item.source, item.external_id, item.connection_id)
+        if key in existing_items_map:
+            # Update existing item
+            existing_item = existing_items_map[key]
+            existing_item.start_time = item.start_time
+            existing_item.end_time = item.end_time
+            existing_item.title = item.title
+            existing_item.description = item.description
+            new_items.append(existing_item)
+            del existing_items_map[key]
+        else:
+            # Create new item
+            new_item = ScheduleItem(
+                user_id=user_id,
+                task_id=item.task_id,
+                start_time=item.start_time,
+                end_time=item.end_time,
+                source=item.source,
+                title=item.title,
+                description=item.description,
+                external_id=item.external_id,
+                connection_id=item.connection_id,
+            )
+            session.add(new_item)
+            new_items.append(new_item)
+
+    # Delete items that are no longer present
+    for remaining_item in existing_items_map.values():
+        session.delete(remaining_item)
+
+    session.flush()
+    for item in new_items:
+        session.refresh(item)
+
+    return new_items
