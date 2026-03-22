@@ -35,5 +35,8 @@
         ]
       }
     }
+  },
+  "containerEnv": {
+    "DATABASE_URL": "postgresql+psycopg://chrono:chrono@db:5432/chrono"
   }
 }
