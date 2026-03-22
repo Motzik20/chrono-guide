@@ -82,6 +82,8 @@ def schedule_blocks_to_schedule_items(
             source=schedule_block.source,
             title=schedule_block.title,
             description=schedule_block.description,
+            external_id=None,
+            connection_id=None,
         )
         for schedule_block in schedule_blocks
     ]

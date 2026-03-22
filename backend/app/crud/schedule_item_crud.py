@@ -50,6 +50,8 @@ def create_schedule_items_from_blocks(
             source=block.source,
             title=block.title,
             description=block.description,
+            external_id=None,
+            connection_id=None,
         )
         schedule_items.append(schedule_item)
         session.add(schedule_item)

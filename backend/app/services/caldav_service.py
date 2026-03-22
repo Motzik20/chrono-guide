@@ -4,7 +4,6 @@ from caldav.davclient import DAVClient
 from sqlmodel import Session
 
 from app.crud.calendar_connection_crud import get_calendar_connections_by_user_id
-from app.crud.schedule_item_crud import sync_schedule_items_to_db
 from app.models.calender_connections import CalendarConnection
 from app.models.schedule_item import ScheduleItem
 from app.schemas.schedule_item import ScheduleItemCreate
@@ -66,11 +65,7 @@ def sync_calendars(user: int, session: Session) -> None:
     )
     for connection in connections:
         client = _create_caldav_basic(connection)
-        schedule_items.extend(
-            get_schedule_items_for_principal(client, user, connection)
-        )
-
-    sync_schedule_items_to_db(schedule_items, user_id=user, session=session)
+        schedule_items.extend(get_schedule_items_for_principal(client, user, connection))
 
 
 def get_schedule_items_for_principal(
@@ -100,12 +95,3 @@ def get_schedule_items_for_principal(
             )
             schedule_items.append(schedule_item)
     return schedule_items
-
-
-if __name__ == "__main__":
-    # Example usage
-    from app.core.db import get_db
-
-    session = next(get_db())
-    sync_calendars(user=1, session=session)
-    session.commit()

@@ -10,7 +10,20 @@ from app.core.timezone import convert_model_datetimes_to_utc, now_utc
 
 class ScheduleItem(SQLModel, table=True):
     __tablename__ = "schedule_items"  # type: ignore[assignment]
-    __table_args__ = (Index("idx_schedule_items_user_start", "user_id", "start_time"),)
+    __table_args__ = (
+        Index("idx_schedule_items_user_start", "user_id", "start_time"),
+        Index(
+            "unique_external_id",
+            "user_id",
+            "source",
+            "external_id",
+            "connection_id",
+            unique=True,
+            postgresql_where=Column("external_id").isnot(None)
+            & Column("connection_id").isnot(None),
+        ),
+    )
+    # Unique constraint in migration for external values: UNIQUE (user_id, source, external_id, connection_id) WHERE external_id IS NOT NULL AND connection_id IS NOT NULL
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", nullable=False)
@@ -34,6 +47,14 @@ class ScheduleItem(SQLModel, table=True):
         default_factory=now_utc,
         sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
+    external_id: str | None = Field(
+        default=None, sa_column=Column(String(255), nullable=True)
+    )  # e.g. for storing the event id from an external calendar
+    connection_id: int | None = Field(
+        default=None,
+        foreign_key="calendar_connections.id",
+        nullable=True,
+    )  # to link schedule items to a specific calendar connection if they were imported from an external calendar
 
     @model_validator(mode="before")
     @classmethod

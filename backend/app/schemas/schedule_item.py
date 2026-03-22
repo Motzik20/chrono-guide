@@ -5,22 +5,20 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.models.schedule_item import ScheduleItem
 
 
-class ScheduleItemFields(BaseModel):
+class ScheduleItemBase(BaseModel):
+    start_time: dt.datetime | None = None
+    end_time: dt.datetime | None = None
     title: str | None = None
     description: str | None = None
     source: str | None = Field(default="task")
     external_id: str | None = None
     connection_id: int | None = None
 
-
-class ScheduleItemBase(ScheduleItemFields):
-    start_time: dt.datetime
-    end_time: dt.datetime
-
     @model_validator(mode="after")
     def end_after_start(self) -> "ScheduleItemBase":
-        if self.end_time <= self.start_time:
-            raise ValueError("End time must be after start time")
+        if self.start_time and self.end_time:
+            if self.end_time <= self.start_time:
+                raise ValueError("End time must be after start time")
         return self
 
 
@@ -29,16 +27,15 @@ class ScheduleItemCreate(ScheduleItemBase):
     user_id: int
 
 
-class ScheduleItemUpdate(ScheduleItemFields):
+class ScheduleItemUpdate(ScheduleItemBase):
     task_id: int | None = None
     start_time: dt.datetime | None = None
     end_time: dt.datetime | None = None
-
-    @model_validator(mode="after")
-    def end_after_start(self) -> "ScheduleItemUpdate":
-        if self.start_time and self.end_time and self.end_time <= self.start_time:
-            raise ValueError("End time must be after start time")
-        return self
+    title: str | None = None
+    description: str | None = None
+    source: str | None = None
+    external_id: str | None = None
+    connection_id: int | None = None
 
 
 class ScheduleItemRead(BaseModel):

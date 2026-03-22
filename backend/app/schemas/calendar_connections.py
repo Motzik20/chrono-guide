@@ -1,5 +1,5 @@
-
 from pydantic import BaseModel
+
 
 class CalendarConnectionCreate(BaseModel):
     connection_type: str
