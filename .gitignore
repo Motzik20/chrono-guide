@@ -4,3 +4,9 @@ TODO.md
 .pytest_cache
 .coverage
 .DS_Store
+.idea/*
+!.idea/inspectionProfiles/
+!.idea/codeStyles/
+!.idea/runConfigurations/
+!.idea/vcs.xml
+.pnpm-store/

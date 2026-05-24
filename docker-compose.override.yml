@@ -24,7 +24,7 @@ services:
       - ./backend/alembic.ini:/backend/alembic.ini
       - ./backend/app/alembic:/backend/app/alembic
       - ./backend/pyproject.toml:/backend/pyproject.toml
-      - ./backend/poetry.lock:/backend/poetry.lock
+      - ./backend/uv.lock:/backend/uv.lock
       - ./backend/scripts:/backend/scripts
       - chrono_uploads:/tmp/chrono_uploads
 
@@ -33,14 +33,13 @@ services:
       target: dev
     user: "${UID:-1000}:${GID:-1000}"
     command:
-      ["poetry", "run", "celery", "-A", "app.celery_app", "worker", "--loglevel=info"]
+      ["celery", "-A", "app.celery_app", "worker", "--loglevel=info"]
     environment:
       HOME: /tmp
-      POETRY_VIRTUALENVS_CREATE: "false"
     volumes:
       - ./backend/app:/backend/app
       - ./backend/pyproject.toml:/backend/pyproject.toml
-      - ./backend/poetry.lock:/backend/poetry.lock
+      - ./backend/uv.lock:/backend/uv.lock
       - chrono_uploads:/tmp/chrono_uploads
 
   flower:
@@ -55,7 +54,7 @@ services:
       HOME: /tmp
     user: "${UID:-1000}:${GID:-1000}"
     command:
-      ["poetry", "run", "celery", "-A", "app.celery_app", "flower", "--port=5555"]
+      ["celery", "-A", "app.celery_app", "flower", "--port=5555"]
     depends_on:
       db:
         condition: service_healthy
@@ -67,7 +66,7 @@ services:
     volumes:
       - ./backend/app:/backend/app
       - ./backend/pyproject.toml:/backend/pyproject.toml
-      - ./backend/poetry.lock:/backend/poetry.lock
+      - ./backend/uv.lock:/backend/uv.lock
 
   frontend:
     build:
@@ -78,4 +77,3 @@ services:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
-
