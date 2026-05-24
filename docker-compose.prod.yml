@@ -5,7 +5,7 @@ services:
     build:
       target: prod
     command:
-      ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
     restart: always
@@ -14,7 +14,7 @@ services:
     build:
       target: prod
     command:
-      ["poetry", "run", "celery", "-A", "app.celery_app", "worker", "--loglevel=info"]
+      ["celery", "-A", "app.celery_app", "worker", "--loglevel=info"]
     restart: always
 
   frontend:
@@ -24,4 +24,3 @@ services:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     command: pnpm start
     restart: always
-

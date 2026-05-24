@@ -83,9 +83,9 @@ An intelligent task scheduling system that uses AI to extract tasks from content
 ### Backend
 ```bash
 cd backend
-poetry install
-poetry run alembic upgrade head
-poetry run uvicorn app.main:app --reload
+uv sync
+uv run alembic upgrade head
+uv run uvicorn app.main:app --reload
 ```
 
 ### Frontend
@@ -100,7 +100,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 docker compose down
 
 # Database migrations (Manual run)
-docker compose exec api poetry run alembic upgrade head
+docker compose exec api alembic upgrade head
 ```
 
 ## Project Structure
@@ -152,20 +152,20 @@ Controls Docker behavior.
 
 ```bash
 # Backend tests
-docker-compose exec api poetry run pytest
+docker-compose exec api pytest
 
 # With coverage
-docker-compose exec api poetry run pytest --cov=app
+docker-compose exec api pytest --cov=app
 ```
 
 ## Database Migrations
 
 ```bash
 # Create migration
-docker-compose exec api poetry run alembic revision --autogenerate -m "description"
+docker-compose exec api alembic revision --autogenerate -m "description"
 
 # Apply migrations
-docker-compose exec api poetry run alembic upgrade head
+docker-compose exec api alembic upgrade head
 ```
 
 ## License
