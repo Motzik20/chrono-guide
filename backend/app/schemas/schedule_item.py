@@ -1,6 +1,6 @@
 import datetime as dt
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.schedule_item import ScheduleItem
 
@@ -11,13 +11,8 @@ class ScheduleItemBase(BaseModel):
     title: str | None = None
     description: str | None = None
     source: str | None = Field(default="task")
-
-    @field_validator("start_time", "end_time")
-    @classmethod
-    def times_must_be_future(cls, v: dt.datetime) -> dt.datetime:
-        if v <= dt.datetime.now(dt.timezone.utc):
-            raise ValueError("Schedule times must be in the future")
-        return v
+    external_id: str | None = None
+    connection_id: int | None = None
 
     @model_validator(mode="after")
     def end_after_start(self) -> "ScheduleItemBase":
@@ -39,6 +34,8 @@ class ScheduleItemUpdate(ScheduleItemBase):
     title: str | None = None
     description: str | None = None
     source: str | None = None
+    external_id: str | None = None
+    connection_id: int | None = None
 
 
 class ScheduleItemRead(BaseModel):
@@ -51,6 +48,8 @@ class ScheduleItemRead(BaseModel):
     title: str | None = None
     description: str | None = None
     source: str = "task"
+    external_id: str | None = None
+    connection_id: int | None = None
     created_at: dt.datetime
     updated_at: dt.datetime
 
@@ -65,6 +64,8 @@ class ScheduleItemResponse(BaseModel):
     title: str | None = None
     description: str | None = None
     source: str = "task"
+    external_id: str | None = None
+    connection_id: int | None = None
     created_at: dt.datetime
     updated_at: dt.datetime
     user_timezone: str
@@ -82,6 +83,8 @@ class ScheduleItemResponse(BaseModel):
             title=model.title,
             description=model.description,
             source=model.source,
+            external_id=model.external_id,
+            connection_id=model.connection_id,
             created_at=model.created_at,
             updated_at=model.updated_at,
             user_timezone=user_timezone,

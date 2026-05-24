@@ -1,6 +1,23 @@
 version: "3.9"
 
 services:
+  workspace:
+    profiles: ["devcontainer"]
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    command: sleep infinity
+    working_dir: /workspace
+    environment:
+      HOME: /home/vscode
+      POETRY_VIRTUALENVS_IN_PROJECT: "true"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - .:/workspace:cached
+
   api:
     build:
       target: dev
@@ -41,6 +58,20 @@ services:
       - ./backend/pyproject.toml:/backend/pyproject.toml
       - ./backend/uv.lock:/backend/uv.lock
       - chrono_uploads:/tmp/chrono_uploads
+
+  celery-beat:
+    build:
+      target: dev
+    user: "${UID:-1000}:${GID:-1000}"
+    command:
+      ["poetry", "run", "celery", "-A", "app.celery_app", "beat", "--loglevel=info"]
+    environment:
+      HOME: /tmp
+      POETRY_VIRTUALENVS_CREATE: "false"
+    volumes:
+      - ./backend/app:/backend/app
+      - ./backend/pyproject.toml:/backend/pyproject.toml
+      - ./backend/poetry.lock:/backend/poetry.lock
 
   flower:
     build:

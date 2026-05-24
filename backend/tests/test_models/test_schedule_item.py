@@ -134,29 +134,6 @@ class TestScheduleItem:
         assert read_from_dict.id == schedule_item.id  # type: ignore[attr-defined]
         assert read_from_dict.user_id == schedule_item.user_id  # type: ignore[attr-defined]
 
-    def test_create_past_datetime(self, task: Task) -> None:
-        tomorrow = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=-5)
-        start_time = tomorrow.replace(hour=14, minute=0, second=0, microsecond=0)
-        end_time = start_time + dt.timedelta(hours=2)
-
-        with pytest.raises(ValueError, match="Schedule times must be in the future"):
-            ScheduleItemCreate(
-                task_id=task.id,  # type: ignore[attr-defined]
-                start_time=start_time,
-                end_time=end_time,
-                title="Create Schedule Item",
-            )
-
-    def test_update_past_datetime(self) -> None:
-        yesterday = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=-5)
-        start_time = yesterday.replace(hour=14, minute=0, second=0, microsecond=0)
-        end_time = start_time + dt.timedelta(hours=2)
-        with pytest.raises(ValueError, match="Schedule times must be in the future"):
-            ScheduleItemUpdate(
-                start_time=start_time,
-                end_time=end_time,
-            )
-
     def test_update_end_before_start(self) -> None:
         yesterday = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=5)
         start_time = yesterday.replace(hour=14, minute=0, second=0, microsecond=0)

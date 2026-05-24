@@ -4,12 +4,19 @@ from celery import Celery
 
 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-celery_app = Celery(
+celery_app: Celery = Celery(
     "chrono_guide",
     broker=redis_url,
     backend=redis_url,
-    include=["app.tasks.ingestion_tasks"],
+    include=["app.tasks.ingestion_tasks", "app.tasks.periodic_sync"],
 )
+
+celery_app.conf.beat_schedule = {
+    "periodic-sync-every-15-minutes": {
+        "task": "app.tasks.periodic_sync.periodic_sync",
+        "schedule": 900.0,  # every 15 minutes
+    },
+}
 
 celery_app.conf.update(
     task_serializer="json",

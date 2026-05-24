@@ -92,7 +92,7 @@ export default function TaskList({
 
   return (
     <div className="flex flex-col h-full mx-auto w-full">
-      <Card className="flex-shrink-0 mb-4">
+      <Card className="shrink-0 mb-4">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="flex justify-between">
             <p className="text-2xl font-bold tracking-tight">{title}</p>
@@ -125,7 +125,7 @@ export default function TaskList({
         ))}
       </div>
       {actionButtons.length > 0 && (
-        <div className="bg-background border-t pt-2 pb-2 flex justify-end gap-2 flex-shrink-0">
+        <div className="bg-background border-t pt-2 pb-2 flex justify-end gap-2 shrink-0">
           {actionButtons.map((button, index) => (
             <Button
               key={index}

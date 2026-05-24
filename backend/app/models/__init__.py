@@ -5,6 +5,7 @@ from .task import Task
 from .temp_upload import TempUpload
 from .user import User
 from .user_setting import UserSetting
+from .calender_connections import CalendarConnection
 
 __all__ = [
     "Task",
@@ -14,5 +15,6 @@ __all__ = [
     "ScheduleItem",
     "UserSetting",
     "TempUpload",
+    "CalendarConnection",
     "CeleryJob",
 ]

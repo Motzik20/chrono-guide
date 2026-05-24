@@ -1,0 +1,42 @@
+{
+  "name": "chrono-guide",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "../docker-compose.override.yml"
+  ],
+  "service": "workspace",
+  "runServices": [
+    "workspace",
+    "db",
+    "redis",
+    "api",
+    "frontend",
+    "celery-worker",
+    "celery-beat"
+  ],
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "remoteUser": "vscode",
+  "postCreateCommand": "bash -lc 'cd /workspace/backend && poetry install --no-interaction && cd /workspace/frontend && pnpm install'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/workspace/backend/.venv/bin/python",
+        "eslint.workingDirectories": [
+          "frontend"
+        ]
+      }
+    }
+  },
+  "containerEnv": {
+    "DATABASE_URL": "postgresql+psycopg://chrono:chrono@db:5432/chrono"
+  }
+}

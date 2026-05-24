@@ -65,6 +65,23 @@ services:
     volumes:
       - chrono_uploads:/tmp/chrono_uploads
 
+  celery-beat:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-chrono}:${POSTGRES_PASSWORD:-chrono}@db:5432/${POSTGRES_DB:-chrono}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    working_dir: /backend
+    volumes:
+      - chrono_uploads:/tmp/chrono_uploads
+
   frontend:
     build:
       context: ./frontend

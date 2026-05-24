@@ -23,7 +23,7 @@ import {
 
 export default function Home() {
   return (
-    <main className="flex flex-col h-full w-full overflow-y-auto bg-gradient-to-b from-background to-muted/20">
+    <main className="flex flex-col h-full w-full overflow-y-auto bg-linear-to-b from-background to-muted/20">
       <div className="flex-1 flex items-center justify-center p-6 md:p-8 lg:p-12">
         <div className="max-w-6xl mx-auto w-full space-y-12">
           {/* Hero Section */}
@@ -32,7 +32,7 @@ export default function Home() {
               <Zap className="h-4 w-4" />
               <span>AI-Powered Task Management</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-linear-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
               Welcome to Chrono Guide
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -43,7 +43,7 @@ export default function Home() {
 
           {/* Quick Actions */}
           <div className="grid gap-6 md:grid-cols-3">
-            <Card className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border-2 hover:border-primary/50 cursor-pointer overflow-hidden bg-gradient-to-br from-background to-background hover:from-primary/5 hover:to-primary/0">
+            <Card className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border-2 hover:border-primary/50 cursor-pointer overflow-hidden bg-linear-to-br from-background to-background hover:from-primary/5 hover:to-primary/0">
               <Link href="/tasks" className="block h-full">
                 <div className="relative h-full flex flex-col">
                   <CardHeader className="relative">
@@ -72,7 +72,7 @@ export default function Home() {
               </Link>
             </Card>
 
-            <Card className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border-2 hover:border-blue-500/50 cursor-pointer overflow-hidden bg-gradient-to-br from-background to-background hover:from-blue-500/5 hover:to-blue-500/0">
+            <Card className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border-2 hover:border-blue-500/50 cursor-pointer overflow-hidden bg-linear-to-br from-background to-background hover:from-blue-500/5 hover:to-blue-500/0">
               <Link href="/schedule" className="block h-full">
                 <div className="relative h-full flex flex-col">
                   <CardHeader className="relative">
@@ -101,7 +101,7 @@ export default function Home() {
               </Link>
             </Card>
 
-            <Card className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border-2 hover:border-purple-500/50 cursor-pointer overflow-hidden bg-gradient-to-br from-background to-background hover:from-purple-500/5 hover:to-purple-500/0">
+            <Card className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border-2 hover:border-purple-500/50 cursor-pointer overflow-hidden bg-linear-to-br from-background to-background hover:from-purple-500/5 hover:to-purple-500/0">
               <Link href="/settings" className="block h-full">
                 <div className="relative h-full flex flex-col">
                   <CardHeader className="relative">
